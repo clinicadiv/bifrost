@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+	--font-satoshi: var(--font-satoshi);
+	--color-div-green: #bcff00;
+}
