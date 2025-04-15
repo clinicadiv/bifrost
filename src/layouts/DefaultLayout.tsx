@@ -2,7 +2,7 @@ import { Header, Sidebar } from "@/components";
 
 export const DefaultLayout = ({ children }: { children: React.ReactNode }) => {
 	return (
-		<div className="w-screen h-screen bg-blue-50">
+		<div className="w-screen h-screen">
 			<div className="w-full h-full grid grid-cols-[auto_1fr]">
 				<Sidebar />
 
