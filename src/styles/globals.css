@@ -3,4 +3,5 @@
 @theme {
 	--font-satoshi: var(--font-satoshi);
 	--color-div-green: #bcff00;
+	--color-div-green-darker: #96cc00;
 }

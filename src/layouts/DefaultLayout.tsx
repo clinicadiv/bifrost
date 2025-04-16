@@ -6,7 +6,7 @@ export const DefaultLayout = ({ children }: { children: React.ReactNode }) => {
 			<div className="w-full h-full grid grid-cols-[auto_1fr]">
 				<Sidebar />
 
-				<div className="w-full h-full flex flex-col">
+				<div className="w-full h-full flex flex-col overflow-y-auto">
 					<Header />
 
 					<div className="p-10 flex flex-1">

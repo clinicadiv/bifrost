@@ -26,7 +26,7 @@ export const Sidebar = () => {
 			</div>
 
 			<div className="px-5">
-				<Button variant="primary" className="w-full flex items-center justify-center py-2.5 bg-div-green text-neutral-800 rounded">Agendar consulta</Button>
+				<Button variant="primary" className="w-full flex items-center justify-center py-2.5 bg-div-green text-neutral-800 rounded border-div-green-darker">Agendar consulta</Button>
 			</div>
 
 			<nav className="flex flex-col gap-4 flex-1 w-full font-satoshi overflow-y-auto">

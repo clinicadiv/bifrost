@@ -4,7 +4,7 @@ import { Bell, Sun } from "@phosphor-icons/react";
 
 export const Header = () => {
 	return (
-		<header className="sticky top-0 w-full flex items-center justify-between px-10 py-5 border-b border-gray-300">
+		<header className="sticky top-0 w-full flex items-center justify-between px-10 py-5 border-b border-gray-300 bg-white z-20">
 			<h1 className="uppercase font-medium font-satoshi text-gray-700">Dashboard</h1>
 
 			<div className="flex items-center gap-5">
