@@ -4,4 +4,23 @@
 	--font-satoshi: var(--font-satoshi);
 	--color-div-green: #bcff00;
 	--color-div-green-darker: #96cc00;
+	--color-primary: #36d682;
+	--color-primary-dark: #25a568;
+	--color-primary-darker: #074727;
+	--color-secondary: #00bdff;
+	--color-secondary-dark: #1f4dcc;
+	--color-secondary-darker: #102451;
+	--color-tertiary: #ff5f5f;
+	--color-tertiary-dark: #ff3217;
+	--color-tertiary-darker: #6d110a;
+	--color-highlight: #ffda00;
+	--color-highlight-dark: #ff8b00;
+	--color-highlight-darker: #683600;
+}
+
+@layer base {
+  *::selection {
+    color: #595959;
+    background-color: #bcff00;
+  }
 }
