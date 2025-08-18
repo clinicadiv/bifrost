@@ -1,0 +1,307 @@
+/* Animações para componentes de erro */
+
+/* Toast Animations */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-in;
+}
+
+/* Modal Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+.animate-scale-out {
+  animation: scale-out 0.2s ease-in;
+}
+
+/* Menu Animations (para dropdowns) */
+@keyframes menu-open {
+  from {
+    transform: translateY(-10px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes menu-close {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-10px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+.animate-menu-open {
+  animation: menu-open 0.2s ease-out;
+}
+
+.animate-menu-close {
+  animation: menu-close 0.2s ease-in;
+}
+
+/* Menu Items Stagger Animation */
+@keyframes menu-item-fade-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-menu-item-1 {
+  animation: menu-item-fade-in 0.3s ease-out 0.05s both;
+}
+
+.animate-menu-item-2 {
+  animation: menu-item-fade-in 0.3s ease-out 0.1s both;
+}
+
+.animate-menu-item-3 {
+  animation: menu-item-fade-in 0.3s ease-out 0.15s both;
+}
+
+.animate-menu-item-4 {
+  animation: menu-item-fade-in 0.3s ease-out 0.2s both;
+}
+
+/* Shake animation para erros críticos */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Pulse animation para indicadores */
+@keyframes pulse-error {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-error {
+  animation: pulse-error 2s ease-in-out infinite;
+}
+
+/* Bounce subtle para notificações */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+/* Wiggle para interações */
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-2deg);
+  }
+  75% {
+    transform: rotate(2deg);
+  }
+}
+
+.group:hover .group-hover\:animate-wiggle {
+  animation: wiggle 0.3s ease-in-out;
+}
+
+/* Progress bar animation */
+@keyframes progress-decrease {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-progress-decrease {
+  animation: progress-decrease linear;
+}
+
+/* Loading spinner para retry */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Glow effect para erros críticos */
+@keyframes glow-error {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+  }
+}
+
+.animate-glow-error {
+  animation: glow-error 2s ease-in-out infinite;
+}
+
+/* Slide up para inline errors */
+@keyframes slide-up {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+    max-height: 100px;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+    max-height: 100px;
+  }
+  to {
+    transform: translateY(-10px);
+    opacity: 0;
+    max-height: 0;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-in;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .animate-slide-in-right {
+    animation: slide-in-right 0.2s ease-out;
+  }
+  
+  .animate-slide-out-right {
+    animation: slide-out-right 0.2s ease-in;
+  }
+  
+  /* Reduce motion for mobile */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-slide-in-right,
+    .animate-slide-out-right,
+    .animate-scale-in,
+    .animate-scale-out,
+    .animate-menu-open,
+    .animate-menu-close,
+    .animate-shake,
+    .animate-bounce-subtle,
+    .group:hover .group-hover\:animate-wiggle {
+      animation: none;
+    }
+    
+    .animate-pulse-error {
+      animation: none;
+      opacity: 0.8;
+    }
+  }
+}

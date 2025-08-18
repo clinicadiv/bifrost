@@ -20,20 +20,31 @@ export const DefaultLayout = ({ children }: { children: React.ReactNode }) => {
   const openLoginModal = useAuthStore((state) => state.openLoginModal);
   const pathname = usePathname();
 
+  // Páginas que devem ter layout standalone (sem sidebar/header)
+  const STANDALONE_PAGES = [
+    "/criar-conta",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+  ];
+  const isStandalonePage = STANDALONE_PAGES.some((route) =>
+    pathname.startsWith(route)
+  );
+
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    // Abre modal apenas se: usuário não logado E tentando acessar rota privada
-    if (!isLoading && !user && !isPublicRoute(pathname)) {
+    // Abre modal apenas se: usuário não logado E tentando acessar rota privada E não é página standalone
+    if (!isLoading && !user && !isPublicRoute(pathname) && !isStandalonePage) {
       openLoginModal();
     }
-  }, [isLoading, user, pathname, openLoginModal]);
+  }, [isLoading, user, pathname, openLoginModal, isStandalonePage]);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="w-full h-screen">
+      <div className="w-full h-screen bg-white dark:bg-slate-900">
         <AnimatePresence>
           <motion.div
             initial={{
@@ -64,26 +75,37 @@ export const DefaultLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Renderização condicional baseada no estado de autenticação e rota */}
         {!isLoading && (
           <>
-            {/* Se é uma rota pública */}
-            {isPublicRoute(pathname) ? (
-              <div className="w-full h-full grid grid-cols-[auto_1fr]">
-                <Sidebar />
-                <div className="w-full h-full flex flex-col overflow-y-auto">
-                  <Header />
-                  <div className="p-10 flex flex-1">{children}</div>
-                </div>
-              </div>
+            {/* Se é uma página standalone (fullscreen) */}
+            {isStandalonePage ? (
+              <div className="w-full h-full">{children}</div>
             ) : (
-              /* Layout padrão para usuários autenticados em rotas privadas */
-              user && (
-                <div className="w-full h-full grid grid-cols-[auto_1fr]">
-                  <Sidebar />
-                  <div className="w-full h-full flex flex-col overflow-y-auto">
-                    <Header />
-                    <div className="p-10 flex flex-1">{children}</div>
+              <>
+                {/* Se é uma rota pública com layout do sistema */}
+                {isPublicRoute(pathname) ? (
+                  <div className="w-full h-full grid grid-cols-[auto_1fr] bg-white dark:bg-slate-900">
+                    <Sidebar />
+                    <div className="w-full h-full flex flex-col overflow-y-auto bg-white dark:bg-slate-900">
+                      <Header />
+                      <div className="p-5 flex flex-1 bg-gray-50 dark:bg-slate-800">
+                        {children}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )
+                ) : (
+                  /* Layout padrão para usuários autenticados em rotas privadas */
+                  user && (
+                    <div className="w-full h-full grid grid-cols-[auto_1fr] bg-white dark:bg-slate-900">
+                      <Sidebar />
+                      <div className="w-full h-full flex flex-col overflow-y-auto bg-white dark:bg-slate-900">
+                        <Header />
+                        <div className="p-10 flex flex-1 bg-gray-50 dark:bg-slate-800">
+                          {children}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </>
             )}
           </>
         )}

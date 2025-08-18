@@ -1,9 +1,15 @@
 import { api } from "@/services/api";
 import { User } from "./login";
 
-interface FindUserResponse {
+interface FindUserData {
   user: User;
+}
+
+interface FindUserResponse {
   success: boolean;
+  data: FindUserData;
+  message: string;
+  timestamp: string;
 }
 
 export async function findUser(token: string) {

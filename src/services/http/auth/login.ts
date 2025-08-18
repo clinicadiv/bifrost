@@ -10,12 +10,23 @@ export interface User {
   whatsapp: boolean;
   whatsappPhone: string;
   level: number;
+  avatar?: string | null;
+  plan: {
+    planName: string;
+    companyName: string;
+  } | null;
+}
+
+interface UserLoginData {
+  user: User;
+  token: string;
 }
 
 export interface UserLoginResponse {
-  user: User;
-  token: string;
   success: boolean;
+  data: UserLoginData;
+  message: string;
+  timestamp: string;
 }
 
 export async function login({

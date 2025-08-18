@@ -4,6 +4,8 @@ interface CreateUserDTO {
   name: string;
   email: string;
   phone: string;
+  document?: string;
+  password?: string;
 }
 
 interface CreateUserResponse {
@@ -25,6 +27,11 @@ interface CreateUserResponse {
       status: number;
       departmentId: string | null;
       asaasCustomerId: string | null;
+      avatar?: string | null;
+      plan: {
+        planName: string;
+        companyName: string;
+      } | null;
       createdAt: string;
       updatedAt: string;
     };

@@ -14,17 +14,13 @@ import {
   type PaymentDataProps,
   type PersonalDataProps,
 } from "@/components";
+import { useTimeSlotOperations } from "@/hooks/mutations/useTimeSlotMutations";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { deleteAppointment } from "@/services/http/appointments/delete-appointment";
 import { createCreditCardPayment } from "@/services/http/payments/create-credit-card-payment";
 import { createPixPayment } from "@/services/http/payments/create-pix-payment";
-import { cancelReservation } from "@/services/http/time-slot/cancel-reservation";
-import { confirmReservation } from "@/services/http/time-slot/confirm-reservation";
-import { createGuestReservation } from "@/services/http/time-slot/create-guest-reservation";
-import { createReservation } from "@/services/http/time-slot/create-reservation";
 import { createUserAndLink } from "@/services/http/time-slot/create-user-and-link";
 import { linkAndCreateAppointment } from "@/services/http/time-slot/link-and-create-appointment";
-import { updateReservation } from "@/services/http/time-slot/update-reservation";
 import { SelectedAppointment, Service, ServiceType } from "@/types";
 import { Check } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -70,6 +66,9 @@ const STEPS = [
 ];
 
 export default function NovaConsulta() {
+  // Hook React Query para operações de time slot
+  const timeSlotOperations = useTimeSlotOperations();
+
   const [steps, setSteps] = useState(STEPS);
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -123,7 +122,7 @@ export default function NovaConsulta() {
       );
 
       try {
-        await cancelReservation(createdReservationId);
+        await timeSlotOperations.cancelReservationAsync(createdReservationId);
 
         setCreatedReservationId(null);
 
@@ -164,8 +163,8 @@ export default function NovaConsulta() {
     []
   );
 
-  // Função para converter seleção para formato do StepFour simplificado
-  const formatAppointmentForStepFour = () => {
+  // Calcula a consulta formatada usando useMemo
+  const formattedAppointment = useMemo(() => {
     if (!selectedAppointment) {
       return null;
     }
@@ -176,68 +175,62 @@ export default function NovaConsulta() {
       professional: selectedAppointment.professional,
       type: selectedAppointment.type,
     };
-  };
-
-  // Calcula a consulta formatada usando useMemo
-  const formattedAppointment = useMemo(() => {
-    return formatAppointmentForStepFour();
   }, [selectedAppointment]);
 
-  // Função para fazer reservas
+  // Função para fazer reservas - SIMPLIFICADA com React Query
   const handleReservation = async (): Promise<boolean> => {
-    if (!selectedService) {
-      return false;
-    }
-
-    if (!selectedAppointment) {
+    if (!selectedService || !selectedAppointment) {
       return false;
     }
 
     setLoadingState(
       true,
-      "Criando suas reservas",
-      "Processando suas consultas selecionadas..."
+      "Criando sua reserva",
+      "Processando sua consulta selecionada..."
     );
     setIsCreatingReservation(true);
 
     try {
+      const reservationData = {
+        professionalId: selectedAppointment.medicalId,
+        serviceId: selectedService.id,
+        appointmentDate: selectedAppointment.date,
+        appointmentTime: selectedAppointment.time,
+        notes: `Consulta de ${selectedService.name}`,
+      };
+
+      let response;
+
       if (user && token) {
-        const reservationData = {
-          medicalId: selectedAppointment.medicalId,
-          patientId: user.id,
-          serviceId: selectedService.id,
-          reservationDate: selectedAppointment.date,
-          reservationTime: selectedAppointment.time,
-          durationMinutes: 15,
-        };
-
-        const response = await createReservation(reservationData);
-
-        if (response && response.data && response.data.id) {
-          setCreatedReservationId(response.data.id);
-        }
+        // Usuário autenticado - usar createReservation
+        response = await timeSlotOperations.createReservationAsync(
+          reservationData
+        );
       } else {
-        const reservationData = {
-          medicalId: selectedAppointment.medicalId,
-          reservationDate: selectedAppointment.date,
-          reservationTime: selectedAppointment.time,
-          serviceId: selectedService.id,
-          durationMinutes: 15,
-        };
+        // Usuário convidado - usar createGuestReservation
+        response = await timeSlotOperations.createGuestReservationAsync({
+          ...reservationData,
+          guestData: {
+            name: personalData?.fullName || "",
+            email: personalData?.email || "",
+            phone: personalData?.phone || "",
+            cpf: personalData?.cpf || "",
+          },
+        });
+      }
 
-        const response = await createGuestReservation(reservationData);
-
-        if (response && response.data && response.data.id) {
-          setCreatedReservationId(response.data.id);
-        } else {
-        }
+      if (response?.data?.id) {
+        setCreatedReservationId(response.data.id);
+        setIsCreatingReservation(false);
+        setLoadingState(false);
+        return true;
       }
 
       setIsCreatingReservation(false);
       setLoadingState(false);
-      return true;
+      return false;
     } catch (error) {
-      console.error("❌ Erro ao criar reservas:", error);
+      console.error("❌ Erro ao criar reserva:", error);
       setIsCreatingReservation(false);
       setLoadingState(false);
       return false;
@@ -260,9 +253,10 @@ export default function NovaConsulta() {
       const createUserResponse = await createUserAndLink({
         reservationId: createdReservationId!,
         body: {
-          name: `${personalData.firstName} ${personalData.lastName}`,
+          name: personalData.fullName,
           email: personalData.email,
           phone: personalData.phone,
+          document: personalData.cpf,
         },
       });
 
@@ -279,9 +273,8 @@ export default function NovaConsulta() {
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const confirmReservationResponse = await confirmReservation(
-        createdReservationId!
-      );
+      const confirmReservationResponse =
+        await timeSlotOperations.confirmReservationAsync(createdReservationId!);
 
       if (confirmReservationResponse.success) {
         setAppointmentId(confirmReservationResponse.data.id);
@@ -346,7 +339,7 @@ export default function NovaConsulta() {
     }
 
     // Verificar se é pagamento PIX
-    if (paymentData.method === "pix") {
+    if (paymentData.method === "PIX") {
       if (!paymentData.pixData) {
         setLoadingState(
           true,
@@ -381,7 +374,7 @@ export default function NovaConsulta() {
         const pixResponse = await createPixPayment({
           appointmentId: appointmentId!,
           customer: {
-            name: `${personalData.firstName} ${personalData.lastName}`,
+            name: personalData.fullName,
             email: personalData.email,
             document: paymentData.pixData.cpf,
             phone: personalData.phone,
@@ -435,7 +428,7 @@ export default function NovaConsulta() {
     }
 
     // Verificar se é pagamento por cartão de crédito
-    if (paymentData.method === "credit") {
+    if (paymentData.method === "CREDIT_CARD") {
       if (!paymentData.cardData) {
         setLoadingState(
           true,
@@ -476,7 +469,7 @@ export default function NovaConsulta() {
         const creditCardPaymentData = {
           appointmentId: appointmentId!,
           customer: {
-            name: `${personalData.firstName} ${personalData.lastName}`,
+            name: personalData.fullName,
             email: personalData.email,
             document: paymentData.cardData.cpf, // Usar CPF do cartão como documento
             phone: personalData.phone,
@@ -602,9 +595,10 @@ export default function NovaConsulta() {
       if (user && createdReservationId) {
         setLoadingState(true, "Confirmando reserva");
 
-        const confirmReservationResponse = await confirmReservation(
-          createdReservationId
-        );
+        const confirmReservationResponse =
+          await timeSlotOperations.confirmReservationAsync(
+            createdReservationId
+          );
 
         if (confirmReservationResponse.success) {
           setAppointmentId(confirmReservationResponse.data.id);
@@ -727,7 +721,7 @@ export default function NovaConsulta() {
       );
 
       try {
-        await cancelReservation(createdReservationId);
+        await timeSlotOperations.cancelReservationAsync(createdReservationId);
 
         // Limpar o ID da reserva criada
         setCreatedReservationId(null);
@@ -772,7 +766,11 @@ export default function NovaConsulta() {
 
       Promise.all([
         deleteAppointment(appointmentId),
-        updateReservation(createdReservationId, "RESERVED"),
+        timeSlotOperations.updateReservationAsync({
+          reservationId: createdReservationId,
+          appointmentDate: selectedAppointment?.date,
+          appointmentTime: selectedAppointment?.time,
+        }),
       ]);
 
       setLoadingState(
@@ -833,35 +831,35 @@ export default function NovaConsulta() {
     setSteps(newSteps);
   };
 
-  const handleLinkAndCreateAppointment = async () => {
-    if (createdReservationId && user) {
-      const response = await linkAndCreateAppointment(
-        createdReservationId,
-        user.id
-      );
-
-      if (response.success) {
-        setAppointmentId(response.data.appointment.id);
-
-        handleNextStep();
-      }
-    }
-  };
-
   useEffect(() => {
+    const handleLinkAndCreateAppointment = async () => {
+      if (createdReservationId && user) {
+        const response = await linkAndCreateAppointment(
+          createdReservationId,
+          user.id
+        );
+
+        if (response.success) {
+          setAppointmentId(response.data.appointment.id);
+
+          handleNextStep();
+        }
+      }
+    };
+
     if (user) {
       setPersonalData({
         email: user.email,
-        firstName: user.name.split(" ")[0],
-        lastName: user.name.split(" ")[1],
+        fullName: user.name,
         phone: user.phone,
+        cpf: user.document || "",
       });
 
       if (createdReservationId) {
         handleLinkAndCreateAppointment();
       }
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="w-full max-h-full flex flex-col gap-5">

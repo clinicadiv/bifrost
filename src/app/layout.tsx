@@ -1,44 +1,47 @@
+import { ErrorDisplay, PageErrorBoundary } from "@/components/ErrorBoundary";
+import { QueryProvider } from "@/components/QueryProvider";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { DefaultLayout } from "@/layouts";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import localFont from 'next/font/local';
+import localFont from "next/font/local";
 import "../styles/globals.css";
 
 const inter = Inter({
-	weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-	subsets: ["latin"]
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  subsets: ["latin"],
 });
 
 const myFont = localFont({
   src: [
     {
-      path: '../assets/fonts/Satoshi-Light.otf',
-      weight: '300',
-      style: 'light',
+      path: "../assets/fonts/Satoshi-Light.otf",
+      weight: "300",
+      style: "light",
     },
     {
-      path: '../assets/fonts/Satoshi-Regular.otf',
-      weight: '400',
-      style: 'normal',
+      path: "../assets/fonts/Satoshi-Regular.otf",
+      weight: "400",
+      style: "normal",
     },
     {
-      path: '../assets/fonts/Satoshi-Medium.otf',
-      weight: '500',
-      style: 'medium',
+      path: "../assets/fonts/Satoshi-Medium.otf",
+      weight: "500",
+      style: "medium",
     },
     {
-      path: '../assets/fonts/Satoshi-Bold.otf',
-      weight: '700',
-      style: 'bold',
+      path: "../assets/fonts/Satoshi-Bold.otf",
+      weight: "700",
+      style: "bold",
     },
     {
-      path: '../assets/fonts/Satoshi-Black.otf',
-      weight: '900',
-      style: 'black',
-    }
+      path: "../assets/fonts/Satoshi-Black.otf",
+      weight: "900",
+      style: "black",
+    },
   ],
-  display: 'swap',
-	variable: '--font-satoshi'
+  display: "swap",
+  variable: "--font-satoshi",
 });
 
 export const metadata: Metadata = {
@@ -53,12 +56,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.className} ${myFont.variable} antialiased`}
-      >
-				<DefaultLayout>
-        	{children}
-				</DefaultLayout>
+      <body className={`${inter.className} ${myFont.variable} antialiased`}>
+        <QueryProvider>
+          <PageErrorBoundary pageTitle="Clínica Div">
+            <ThemeProvider>
+              <DefaultLayout>{children}</DefaultLayout>
+              <ErrorDisplay />
+            </ThemeProvider>
+          </PageErrorBoundary>
+        </QueryProvider>
       </body>
     </html>
   );

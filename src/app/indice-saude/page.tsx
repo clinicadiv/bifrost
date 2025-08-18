@@ -15,6 +15,7 @@ import {
   LightbulbIcon,
   WarningIcon,
 } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
 import { useState } from "react";
 
 export default function IndiceSaude() {
@@ -29,6 +30,77 @@ export default function IndiceSaude() {
 
   const perPageChangeHandler = (newPerPage: number) => {
     setPerPage(newPerPage);
+  };
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const headerVariants = {
+    hidden: {
+      opacity: 0,
+      y: -30,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const statsVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: {
+      opacity: 0,
+      x: -30,
+      scale: 0.95,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const slideInVariants = {
+    hidden: {
+      opacity: 0,
+      y: 50,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    },
   };
 
   const tableProps: TableListProps<Rating> = {
@@ -83,140 +155,282 @@ export default function IndiceSaude() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white w-full">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-slate-900 dark:to-slate-800 w-full"
+    >
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
+      <motion.div
+        variants={headerVariants}
+        initial="hidden"
+        animate="visible"
+        className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 sticky top-0 z-10"
+      >
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Índice de Saúde Mental 🧠
               </h1>
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 dark:text-slate-400 mt-1">
                 Acompanhe sua saúde mental e receba recomendações personalizadas
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <Button
-                variant="primary.regular"
-                icon={<FileTextIcon size={20} weight="bold" />}
-                className="py-3 px-6"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Realizar Teste DASS-21
-              </Button>
-              <Button
-                variant="secondary.light"
-                icon={<Download size={20} weight="bold" />}
-                className="py-3 px-6"
+                <Button
+                  variant="primary.regular"
+                  icon={<FileTextIcon size={20} weight="bold" />}
+                  className="py-3 px-6"
+                >
+                  Realizar Teste DASS-21
+                </Button>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Exportar Histórico
-              </Button>
+                <Button
+                  variant="secondary.light"
+                  icon={<Download size={20} weight="bold" />}
+                  className="py-3 px-6"
+                >
+                  Exportar Histórico
+                </Button>
+              </motion.div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="p-6 w-full">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          <motion.div
+            variants={statsVariants}
+            whileHover={{
+              scale: 1.05,
+              transition: { duration: 0.2 },
+            }}
+            className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Índice Geral</p>
-                <p className="text-3xl font-bold text-gray-900">21</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+                  Índice Geral
+                </p>
+                <motion.p
+                  className="text-3xl font-bold text-gray-900 dark:text-white"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5, duration: 0.3 }}
+                >
+                  21
+                </motion.p>
               </div>
-              <div className="p-3 bg-red-100 rounded-xl">
-                <HeartIcon size={24} weight="bold" className="text-red-600" />
-              </div>
+              <motion.div
+                className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                <HeartIcon
+                  size={24}
+                  weight="bold"
+                  className="text-red-600 dark:text-red-400"
+                />
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
+          <motion.div
+            variants={statsVariants}
+            whileHover={{
+              scale: 1.05,
+              transition: { duration: 0.2 },
+            }}
+            className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Depressão</p>
-                <p className="text-3xl font-bold text-gray-900">5</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+                  Depressão
+                </p>
+                <motion.p
+                  className="text-3xl font-bold text-gray-900 dark:text-white"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6, duration: 0.3 }}
+                >
+                  5
+                </motion.p>
               </div>
-              <div className="p-3 bg-green-100 rounded-xl">
-                <BrainIcon size={24} weight="bold" className="text-green-600" />
-              </div>
+              <motion.div
+                className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
+                <BrainIcon
+                  size={24}
+                  weight="bold"
+                  className="text-green-600 dark:text-green-400"
+                />
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
+          <motion.div
+            variants={statsVariants}
+            whileHover={{
+              scale: 1.05,
+              transition: { duration: 0.2 },
+            }}
+            className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Ansiedade</p>
-                <p className="text-3xl font-bold text-gray-900">12</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+                  Ansiedade
+                </p>
+                <motion.p
+                  className="text-3xl font-bold text-gray-900 dark:text-white"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.7, duration: 0.3 }}
+                >
+                  12
+                </motion.p>
               </div>
-              <div className="p-3 bg-yellow-100 rounded-xl">
+              <motion.div
+                className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+              >
                 <LightbulbIcon
                   size={24}
                   weight="bold"
-                  className="text-yellow-600"
+                  className="text-yellow-600 dark:text-yellow-400"
                 />
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
+          <motion.div
+            variants={statsVariants}
+            whileHover={{
+              scale: 1.05,
+              transition: { duration: 0.2 },
+            }}
+            className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Estresse</p>
-                <p className="text-3xl font-bold text-gray-900">21</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+                  Estresse
+                </p>
+                <motion.p
+                  className="text-3xl font-bold text-gray-900 dark:text-white"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.8, duration: 0.3 }}
+                >
+                  21
+                </motion.p>
               </div>
-              <div className="p-3 bg-orange-100 rounded-xl">
+              <motion.div
+                className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+              >
                 <WarningIcon
                   size={24}
                   weight="bold"
-                  className="text-orange-600"
+                  className="text-orange-600 dark:text-orange-400"
                 />
-              </div>
+              </motion.div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Main Health Index Card */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl shadow-sm border border-red-200 overflow-hidden">
-            <div className="p-6 bg-white border-b border-red-100">
+        <motion.div
+          variants={slideInVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.4 }}
+          className="mb-8"
+        >
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+            className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-2xl shadow-sm border border-red-200 dark:border-red-800/50 overflow-hidden"
+          >
+            <div className="p-6 bg-white dark:bg-slate-800 border-b border-red-100 dark:border-red-800/50">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   Avaliação Atual
                 </h2>
-                <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1 rounded-full">
+                <motion.div
+                  className="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-full"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6, duration: 0.3 }}
+                >
                   <WarningIcon size={16} weight="fill" />
                   <span className="text-sm font-medium">Preocupante</span>
-                </div>
+                </motion.div>
               </div>
             </div>
 
             <div className="p-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-8">
                   {/* Score Circle */}
                   <div className="flex-shrink-0">
-                    <div className="relative w-24 h-24">
+                    <motion.div
+                      className="relative w-24 h-24"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.8, duration: 0.6 }}
+                    >
                       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500 to-red-600 p-1">
-                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                        <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex items-center justify-center">
                           <div className="text-center">
-                            <div className="text-3xl font-bold text-gray-900">
+                            <motion.div
+                              className="text-3xl font-bold text-gray-900 dark:text-white"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 1, duration: 0.3 }}
+                            >
                               21
-                            </div>
+                            </motion.div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Status Details */}
                   <div className="flex-1">
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-2xl font-bold text-gray-900 uppercase">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white uppercase">
                           Preocupante
                         </h3>
-                        <p className="text-gray-600 text-sm">
+                        <p className="text-gray-600 dark:text-slate-300 text-sm">
                           Os indicadores de saúde mental estão em níveis
                           preocupantes. Necessita de atenção imediata e
                           intervenções direcionadas.
@@ -228,9 +442,9 @@ export default function IndiceSaude() {
                           <ClockIcon
                             size={16}
                             weight="bold"
-                            className="text-gray-500"
+                            className="text-gray-500 dark:text-slate-400"
                           />
-                          <span className="text-gray-600">
+                          <span className="text-gray-600 dark:text-slate-300">
                             <span className="font-semibold">
                               Última avaliação:
                             </span>{" "}
@@ -241,13 +455,13 @@ export default function IndiceSaude() {
                           <CalendarIcon
                             size={16}
                             weight="bold"
-                            className="text-green-600"
+                            className="text-green-600 dark:text-green-400"
                           />
-                          <span className="text-gray-600">
+                          <span className="text-gray-600 dark:text-slate-300">
                             <span className="font-semibold">
                               Próxima avaliação:
                             </span>{" "}
-                            <span className="text-green-600 font-medium">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
                               Disponível agora
                             </span>
                           </span>
@@ -258,122 +472,192 @@ export default function IndiceSaude() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Metrics Cards */}
-        <div className="mb-8">
+        <motion.div
+          variants={slideInVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.6 }}
+          className="mb-8"
+        >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Métricas de Saúde Mental
             </h2>
-            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+            <motion.div
+              className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.3 }}
+            >
               <ChartLineUpIcon size={16} weight="bold" />3 métricas analisadas
-            </div>
+            </motion.div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 hover:-translate-y-1">
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              whileHover={{
+                y: -5,
+                transition: { duration: 0.2 },
+              }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-slate-700"
+            >
               <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-green-100 rounded-xl">
+                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
                   <BrainIcon
                     size={24}
                     weight="bold"
-                    className="text-green-600"
+                    className="text-green-600 dark:text-green-400"
                   />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Depressão</h3>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Depressão
+                  </h3>
+                  <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full">
                     Leve
                   </span>
                 </div>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-slate-300 text-sm">
                 Avalia sentimentos como desânimo, falta de interesse e baixa
                 autoestima.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 hover:-translate-y-1">
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              whileHover={{
+                y: -5,
+                transition: { duration: 0.2 },
+              }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-slate-700"
+            >
               <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-yellow-100 rounded-xl">
+                <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
                   <LightbulbIcon
                     size={24}
                     weight="bold"
-                    className="text-yellow-600"
+                    className="text-yellow-600 dark:text-yellow-400"
                   />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Ansiedade</h3>
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Ansiedade
+                  </h3>
+                  <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded-full">
                     Moderado
                   </span>
                 </div>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-slate-300 text-sm">
                 Avalia sensações de nervosismo, preocupação excessiva e reações
                 físicas de ansiedade.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 hover:-translate-y-1">
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              whileHover={{
+                y: -5,
+                transition: { duration: 0.2 },
+              }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-slate-700"
+            >
               <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-red-100 rounded-xl">
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
                   <WarningIcon
                     size={24}
                     weight="bold"
-                    className="text-red-600"
+                    className="text-red-600 dark:text-red-400"
                   />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Estresse</h3>
-                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Estresse
+                  </h3>
+                  <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-1 rounded-full">
                     Severo
                   </span>
                 </div>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-slate-300 text-sm">
                 Avalia irritabilidade, tensão e dificuldade em relaxar.
               </p>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Recommendations */}
-        <div className="mb-8">
+        <motion.div
+          variants={slideInVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.8 }}
+          className="mb-8"
+        >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Recomendações Personalizadas
             </h2>
-            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+            <motion.div
+              className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded-full"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 1, duration: 0.3 }}
+            >
               <LightbulbIcon size={16} weight="bold" />3 recomendações
-            </div>
+            </motion.div>
           </div>
 
           <div className="space-y-6">
             {/* Depression Recommendations */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200">
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              whileHover={{
+                scale: 1.02,
+                transition: { duration: 0.2 },
+              }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-all duration-200"
+            >
               <div className="p-6 border-l-4 border-l-green-500">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-green-100 rounded-xl">
+                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
                     <BrainIcon
                       size={24}
                       weight="bold"
-                      className="text-green-600"
+                      className="text-green-600 dark:text-green-400"
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                       Estratégias para Depressão
                     </h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 dark:text-slate-300 text-sm">
                       Sua pontuação de depressão está elevada. Considere
                       implementar as seguintes estratégias:
                     </p>
                   </div>
                 </div>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-gray-600 dark:text-slate-300">
                   <li className="flex items-start gap-3">
                     <CheckCircleIcon
                       size={16}
@@ -417,29 +701,40 @@ export default function IndiceSaude() {
                   </li>
                 </ul>
               </div>
-            </div>
+            </motion.div>
 
             {/* Anxiety Recommendations */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200">
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              whileHover={{
+                scale: 1.02,
+                transition: { duration: 0.2 },
+              }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-all duration-200"
+            >
               <div className="p-6 border-l-4 border-l-yellow-500">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-yellow-100 rounded-xl">
+                  <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
                     <LightbulbIcon
                       size={24}
                       weight="bold"
-                      className="text-yellow-600"
+                      className="text-yellow-600 dark:text-yellow-400"
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                       Melhorando a Ansiedade
                     </h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 dark:text-slate-300 text-sm">
                       Para reduzir sua ansiedade, considere:
                     </p>
                   </div>
                 </div>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-gray-600 dark:text-slate-300">
                   <li className="flex items-start gap-3">
                     <CheckCircleIcon
                       size={16}
@@ -494,30 +789,41 @@ export default function IndiceSaude() {
                   </li>
                 </ul>
               </div>
-            </div>
+            </motion.div>
 
             {/* Stress Recommendations */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200">
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              whileHover={{
+                scale: 1.02,
+                transition: { duration: 0.2 },
+              }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-all duration-200"
+            >
               <div className="p-6 border-l-4 border-l-red-500">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-red-100 rounded-xl">
+                  <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
                     <WarningIcon
                       size={24}
                       weight="bold"
-                      className="text-red-600"
+                      className="text-red-600 dark:text-red-400"
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                       Estratégias para Estresse
                     </h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 dark:text-slate-300 text-sm">
                       Sua pontuação de estresse está elevada. Considere
                       implementar as seguintes estratégias:
                     </p>
                   </div>
                 </div>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-gray-600 dark:text-slate-300">
                   <li className="flex items-start gap-3">
                     <CheckCircleIcon
                       size={16}
@@ -572,27 +878,43 @@ export default function IndiceSaude() {
                   </li>
                 </ul>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Historical Data */}
-        <div>
+        <motion.div
+          variants={slideInVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 1 }}
+        >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Histórico de Avaliações
             </h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
+            <motion.div
+              className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-700 px-3 py-1 rounded-full"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 1.2, duration: 0.3 }}
+            >
               <InfoIcon size={16} weight="bold" />
               {ratings.length} avaliações
-            </div>
+            </motion.div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          <motion.div
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700"
+            whileHover={{
+              scale: 1.01,
+              transition: { duration: 0.2 },
+            }}
+          >
             <TableList {...tableProps} />
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,25 +1,23 @@
 "use client";
 
-import { findPsychiatrists } from "@/services/http/psychiatrist/find-psyquiatrists";
-import { findPsychologists } from "@/services/http/psychologist/find-psychologists";
-import {
-  Psychologist,
-  SelectedAppointment,
-  Service,
-  ServiceType,
-} from "@/types";
+import { useTheme } from "@/contexts/ThemeContext";
+import { findPsychiatrists } from "@/services/http/psychiatrist";
+import { findPsychologists } from "@/services/http/psychologist";
+import { SelectedAppointment, Service, ServiceType } from "@/types";
+import { Psychologist } from "@/types/Psychologist";
+import { formatLocalDate, getDateRange } from "@/utils";
 import {
   Brain,
   Calendar,
-  CaretLeft,
-  CaretRight,
   CheckCircle,
-  MapPin,
+  Clock,
+  Lightbulb,
   Star,
   User,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Button } from "./Button";
 
 interface StepThreeProps {
   selectedService: Service | null;
@@ -36,6 +34,7 @@ export const StepThree = ({
   selectedAppointment,
   setSelectedAppointment,
 }: StepThreeProps) => {
+  const { theme } = useTheme();
   const [selectedProfessional, setSelectedProfessional] =
     useState<Psychologist | null>(null);
   const [currentWeek, setCurrentWeek] = useState(0);
@@ -58,47 +57,45 @@ export const StepThree = ({
   const fetchPsychologistsData = async () => {
     if (!selectedService || serviceType !== "psychologist") return [];
 
-    const today = new Date();
-    const startDate = `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    try {
+      const today = new Date();
+      const { startDate, endDate } = getDateRange(today, 29);
 
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 29);
-    const endDateStr = `${endDate.getFullYear()}-${String(
-      endDate.getMonth() + 1
-    ).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
-
-    return findPsychologists({ startDate, endDate: endDateStr });
+      const result = await findPsychologists({ startDate, endDate });
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      console.error("Erro ao buscar psicólogos:", error);
+      return [];
+    }
   };
 
   const fetchPsychiatristsData = async () => {
     if (!selectedService || serviceType !== "psychiatrist") return [];
 
-    const today = new Date();
-    const startDate = `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    try {
+      const today = new Date();
+      const { startDate, endDate } = getDateRange(today, 29);
 
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 29);
-    const endDateStr = `${endDate.getFullYear()}-${String(
-      endDate.getMonth() + 1
-    ).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
-
-    return findPsychiatrists({ startDate, endDate: endDateStr });
+      const result = await findPsychiatrists({ startDate, endDate });
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      console.error("Erro ao buscar psiquiatras:", error);
+      return [];
+    }
   };
 
   const { data: psychologists } = useQuery({
-    queryKey: ["psychologists"],
+    queryKey: ["psychologists", selectedService?.id, serviceType],
     queryFn: fetchPsychologistsData,
     enabled: !!selectedService && serviceType === "psychologist",
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
   const { data: psychiatrists } = useQuery({
-    queryKey: ["psychiatrists"],
+    queryKey: ["psychiatrists", selectedService?.id, serviceType],
     queryFn: fetchPsychiatristsData,
     enabled: !!selectedService && serviceType === "psychiatrist",
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
   const handleAppointmentSelect = (
@@ -107,14 +104,29 @@ export const StepThree = ({
     time: string,
     type: "psychologist" | "psychiatrist"
   ) => {
-    const appointment: SelectedAppointment = {
-      medicalId: professional.id,
-      date,
-      time,
-      type,
-      professional,
-    };
-    setSelectedAppointment(appointment);
+    try {
+      // Verificação de segurança
+      if (!professional || !professional.id || !date || !time) {
+        console.error("Dados insuficientes para criar appointment:", {
+          professional,
+          date,
+          time,
+          type,
+        });
+        return;
+      }
+
+      const appointment: SelectedAppointment = {
+        medicalId: professional.id,
+        date,
+        time,
+        type,
+        professional,
+      };
+      setSelectedAppointment(appointment);
+    } catch (error) {
+      console.error("Erro ao selecionar appointment:", error);
+    }
   };
 
   const isTimeSelected = (
@@ -134,15 +146,28 @@ export const StepThree = ({
     const times: Array<{ date: string; time: string; dayName: string }> = [];
     const today = new Date();
 
-    professional.availableTimes?.forEach((timeSlot) => {
+    // Verificação de segurança para evitar erros
+    if (!professional || !professional.availableTimes) {
+      return [];
+    }
+
+    professional.availableTimes.forEach((timeSlot) => {
+      if (!timeSlot || !timeSlot.date || !timeSlot.times) {
+        return;
+      }
+
       const slotDate = new Date(timeSlot.date);
       if (slotDate >= today) {
         timeSlot.times.forEach((time) => {
-          times.push({
-            date: timeSlot.date,
-            time: time.time,
-            dayName: slotDate.toLocaleDateString("pt-BR", { weekday: "short" }),
-          });
+          if (time && time.time) {
+            times.push({
+              date: timeSlot.date,
+              time: time.time,
+              dayName: slotDate.toLocaleDateString("pt-BR", {
+                weekday: "short",
+              }),
+            });
+          }
         });
       }
     });
@@ -154,6 +179,11 @@ export const StepThree = ({
     professional: Psychologist,
     type: "psychologist" | "psychiatrist"
   ) => {
+    // Verificação de segurança para o objeto professional
+    if (!professional || !professional.id) {
+      return null;
+    }
+
     const nextTimes = getNextAvailableTimes(professional);
     const hasSelectedAppointment =
       selectedAppointment?.medicalId === professional.id;
@@ -161,113 +191,187 @@ export const StepThree = ({
     return (
       <div
         key={professional.id}
-        className={`bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-xl ${
+        className={`${
+          theme === "dark"
+            ? "bg-gray-900/50 border-gray-700/50"
+            : "bg-white/70 border-gray-200/50"
+        } backdrop-blur-sm rounded-3xl border transition-all duration-300 hover:shadow-lg ${
           hasSelectedAppointment
-            ? "border-green-400 shadow-lg ring-4 ring-green-100"
-            : "border-gray-200 hover:border-gray-300"
+            ? `border-green-400 shadow-2xl ring-4 ${
+                theme === "dark" ? "ring-green-800/30" : "ring-green-100/50"
+              }`
+            : `${
+                theme === "dark"
+                  ? "hover:border-gray-600/70"
+                  : "hover:border-gray-300/70"
+              }`
         }`}
       >
-        {/* Header do profissional */}
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-start gap-4">
+        <div className="p-8">
+          <div className="flex items-start gap-6">
+            {/* Avatar Section */}
             <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-md">
+              <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-xl ring-4 ring-white/10">
                 <img
-                  src={professional.avatar}
-                  alt={professional.userName}
+                  src={
+                    professional.avatar ||
+                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIyMCIgeT0iMjAiPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSI0IiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAxNGMtNC40MiAwLTggMS43OS04IDRzMy41OCA0IDggNCA4LTEuNzkgOC00LTMuNTgtNC04LTR6IiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo8L3N2Zz4K"
+                  }
+                  alt={professional.userName || "Profissional"}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src =
+                      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIyMCIgeT0iMjAiPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSI0IiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAxNGMtNC40MiAwLTggMS43OS04IDRzMy41OCA0IDggNCA4LTEuNzkgOC00LTMuNTgtNC04LTR6IiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo8L3N2Zz4K";
+                  }}
                 />
               </div>
-              <div className="absolute -bottom-1 -right-1 bg-green-400 w-4 h-4 rounded-full border-2 border-white"></div>
+              <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-green-400 to-green-500 w-6 h-6 rounded-full border-3 border-white shadow-lg flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              </div>
             </div>
 
+            {/* Content Section */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-bold text-gray-900 truncate">
-                  Dr(a). {professional.userName}
-                </h3>
-                {type === "psychologist" ? (
-                  <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-xs font-medium">
-                    <User size={12} className="inline mr-1" />
-                    Psicólogo
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3
+                    className={`text-xl font-bold ${
+                      theme === "dark" ? "text-white" : "text-gray-900"
+                    } mb-1`}
+                  >
+                    Dr(a). {professional.userName || "Profissional"}
+                  </h3>
+
+                  {type === "psychologist" ? (
+                    <div
+                      className={`inline-flex items-center gap-2 ${
+                        theme === "dark"
+                          ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                          : "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                      } px-3 py-1.5 rounded-full text-sm font-medium shadow-lg`}
+                    >
+                      <User size={14} weight="fill" />
+                      Psicólogo
+                    </div>
+                  ) : (
+                    <div
+                      className={`inline-flex items-center gap-2 ${
+                        theme === "dark"
+                          ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white"
+                          : "bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+                      } px-3 py-1.5 rounded-full text-sm font-medium shadow-lg`}
+                    >
+                      <Brain size={14} weight="fill" />
+                      Psiquiatra
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <Star size={16} weight="fill" className="text-yellow-400" />
+                    <span
+                      className={`font-semibold ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      4.9
+                    </span>
                   </div>
-                ) : (
-                  <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded-lg text-xs font-medium">
-                    <Brain size={12} className="inline mr-1" />
-                    Psiquiatra
+                  <div className="flex items-center gap-1.5">
+                    <User
+                      size={16}
+                      className={`${
+                        theme === "dark" ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    />
+                    <span
+                      className={`${
+                        theme === "dark" ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
+                      {professional.finishedAppointments || 0} consultas
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {professional.specialties &&
+                Array.isArray(professional.specialties) &&
+                professional.specialties.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {professional.specialties
+                      .slice(0, 3)
+                      .map((specialty, index) => (
+                        <span
+                          key={index}
+                          className={`${
+                            theme === "dark"
+                              ? "bg-gray-700/50 text-gray-300"
+                              : "bg-gray-100/80 text-gray-700"
+                          } px-3 py-1.5 rounded-full text-xs font-medium border ${
+                            theme === "dark"
+                              ? "border-gray-600/50"
+                              : "border-gray-200/50"
+                          }`}
+                        >
+                          {specialty}
+                        </span>
+                      ))}
+                    {professional.specialties.length > 3 && (
+                      <span
+                        className={`text-xs font-medium ${
+                          theme === "dark" ? "text-gray-400" : "text-gray-500"
+                        } px-3 py-1.5`}
+                      >
+                        +{professional.specialties.length - 3} mais
+                      </span>
+                    )}
                   </div>
                 )}
-              </div>
 
-              <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                <div className="flex items-center gap-1">
-                  <MapPin size={14} />
-                  <span>CRP {professional.crp}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <CheckCircle size={14} className="text-green-500" />
-                  <span>
-                    {professional.finishedAppointments || 0} consultas
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`p-2 rounded-full ${
+                      theme === "dark" ? "bg-gray-700/50" : "bg-gray-100/80"
+                    }`}
+                  >
+                    <Clock
+                      size={16}
+                      className={`${
+                        theme === "dark" ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    />
+                  </div>
+                  <span
+                    className={`text-sm font-medium ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    {nextTimes.length > 0
+                      ? `${nextTimes.length} horários disponíveis`
+                      : "Sem horários disponíveis"}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Star size={14} className="text-yellow-500" />
-                  <span>4.9 (156)</span>
-                </div>
-              </div>
 
-              <p className="text-sm text-gray-600 line-clamp-2">
-                {professional.bio ||
-                  "Profissional especializado em atendimento psicológico com foco em bem-estar e qualidade de vida."}
-              </p>
-            </div>
-
-            <div className="text-right flex-shrink-0">
-              <div className="bg-gray-50 rounded-lg px-3 py-2">
-                <div className="text-xs text-gray-500 uppercase tracking-wide">
-                  Sessão
-                </div>
-                <div className="text-sm font-bold text-gray-800">50 min</div>
+                <Button
+                  variant="primary.lighter"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedProfessional(professional);
+                    setCurrentWeek(0);
+                  }}
+                  disabled={nextTimes.length === 0}
+                  className="px-6 py-3 text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                >
+                  Ver calendário completo
+                </Button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Botão para ver horários */}
-        <div className="p-6">
-          <button
-            onClick={() => setSelectedProfessional(professional)}
-            className="cursor-pointer w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-xl px-4 py-3 transition-all duration-200 flex items-center justify-center gap-2 group"
-          >
-            <Calendar size={16} className="text-blue-600" />
-            <span className="text-sm font-medium text-blue-700 group-hover:text-blue-800">
-              Ver horários disponíveis
-            </span>
-            <CaretRight
-              size={14}
-              className="text-blue-600 group-hover:translate-x-0.5 transition-transform"
-            />
-          </button>
-
-          {nextTimes.length === 0 && (
-            <div className="text-center py-2 mt-3">
-              <p className="text-xs text-gray-500">Sem horários disponíveis</p>
-            </div>
-          )}
-        </div>
-
-        {hasSelectedAppointment && (
-          <div className="px-6 py-4 bg-green-50 border-t border-green-100">
-            <div className="flex items-center gap-2 text-green-700">
-              <CheckCircle size={16} />
-              <span className="text-sm font-medium">
-                Consulta agendada para{" "}
-                {new Date(selectedAppointment.date).toLocaleDateString("pt-BR")}{" "}
-                às {selectedAppointment.time}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -276,37 +380,70 @@ export const StepThree = ({
     professional: Psychologist,
     type: "psychologist" | "psychiatrist"
   ) => {
+    // Verificação de segurança para o objeto professional
+    if (!professional || !professional.id) {
+      return null;
+    }
+
     const weekDates = getWeekDates(currentWeek);
-    const today = new Date().toDateString();
+    const weekDays = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"];
 
     return (
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200">
+      <div
+        className={`${
+          theme === "dark"
+            ? "bg-gray-800 border-gray-700"
+            : "bg-white border-gray-200"
+        } rounded-2xl border-2 shadow-xl`}
+      >
         {/* Header do profissional */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-200">
+        <div
+          className={`p-6 border-b ${
+            theme === "dark" ? "border-gray-700" : "border-gray-100"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setSelectedProfessional(null)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                onClick={() => {
+                  setSelectedProfessional(null);
+                  setCurrentWeek(0);
+                }}
+                className={`p-2 ${
+                  theme === "dark"
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-gray-100 hover:bg-gray-200"
+                } rounded-lg transition-colors`}
               >
-                <CaretLeft size={16} />
-                <span className="text-sm font-medium">Voltar</span>
+                ←
               </button>
-
-              <div className="w-px h-6 bg-gray-300"></div>
-
               <div className="flex items-center gap-3">
-                <img
-                  src={professional.avatar}
-                  alt={professional.userName}
-                  className="w-12 h-12 rounded-xl object-cover"
-                />
+                <div className="w-12 h-12 rounded-xl overflow-hidden">
+                  <img
+                    src={
+                      professional.avatar ||
+                      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIyMCIgeT0iMjAiPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSI0IiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAxNGMtNC40MiAwLTggMS43OS04IDRzMy41OCA0IDggNCA4LTEuNzkgOC00LTMuNTgtNC04LTR6IiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo8L3N2Zz4K"
+                    }
+                    alt={professional.userName || "Profissional"}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src =
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIyMCIgeT0iMjAiPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSI0IiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0xMiAxNGMtNC40MiAwLTggMS43OS04IDRzMy41OCA0IDggNCA4LTEuNzkgOC00LTMuNTgtNC04LTR6IiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo8L3N2Zz4K";
+                    }}
+                  />
+                </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">
-                    Dr(a). {professional.userName}
+                  <h3
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-gray-200" : "text-gray-900"
+                    }`}
+                  >
+                    Dr(a). {professional.userName || "Profissional"}
                   </h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>CRP {professional.crp}</span>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Star size={14} weight="fill" className="text-yellow-400" />
+                    <span>4.9</span>
                     <span>•</span>
                     <span>
                       {professional.finishedAppointments || 0} consultas
@@ -315,114 +452,113 @@ export const StepThree = ({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Navegação da semana */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setCurrentWeek(Math.max(0, currentWeek - 1))}
-              disabled={currentWeek === 0}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-white hover:shadow-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <CaretLeft size={16} />
-              <span className="text-sm font-medium">Semana anterior</span>
-            </button>
-
-            <div className="text-center">
-              <div className="text-sm font-semibold text-gray-800">
-                {weekDates[0].toLocaleDateString("pt-BR", {
-                  day: "2-digit",
-                  month: "long",
-                })}{" "}
-                -{" "}
-                {weekDates[6].toLocaleDateString("pt-BR", {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentWeek(currentWeek - 1)}
+                disabled={currentWeek === 0}
+                className={`p-2 rounded-lg transition-colors ${
+                  currentWeek === 0
+                    ? "opacity-50 cursor-not-allowed"
+                    : theme === "dark"
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-gray-100 hover:bg-gray-200"
+                }`}
+              >
+                ←
+              </button>
+              <span
+                className={`text-sm font-medium ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}
+              >
+                Semana {currentWeek + 1}
+              </span>
+              <button
+                onClick={() => setCurrentWeek(currentWeek + 1)}
+                disabled={currentWeek >= 3}
+                className={`p-2 rounded-lg transition-colors ${
+                  currentWeek >= 3
+                    ? "opacity-50 cursor-not-allowed"
+                    : theme === "dark"
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-gray-100 hover:bg-gray-200"
+                }`}
+              >
+                →
+              </button>
             </div>
-
-            <button
-              onClick={() => setCurrentWeek(currentWeek + 1)}
-              disabled={currentWeek >= 3}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-white hover:shadow-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="text-sm font-medium">Próxima semana</span>
-              <CaretRight size={16} />
-            </button>
           </div>
         </div>
 
-        {/* Grid do calendário */}
+        {/* Calendário semanal */}
         <div className="p-6">
-          <div className="grid grid-cols-7 gap-4">
-            {weekDates.map((date) => {
-              const dateStr = date.toISOString().split("T")[0];
-              const daySchedule = professional.availableTimes?.find(
-                (slot) => slot.date === dateStr
+          {/* Grid dos dias da semana */}
+          <div className="grid grid-cols-7 gap-3">
+            {weekDays.map((day, dayIndex) => {
+              const currentDate = weekDates[dayIndex];
+              const dateStr = formatLocalDate(currentDate);
+              const availableSlot = professional.availableTimes?.find(
+                (slot) => slot && slot.date === dateStr
               );
-              const isToday = date.toDateString() === today;
-              const isPast = date < new Date() && !isToday;
-              const dayName = date.toLocaleDateString("pt-BR", {
-                weekday: "short",
-              });
 
               return (
-                <div key={dateStr} className="text-center">
+                <div key={dayIndex} className="text-center">
                   <div
-                    className={`p-3 rounded-lg mb-3 ${
-                      isToday
-                        ? "bg-blue-500 text-white"
-                        : isPast
-                        ? "bg-gray-100 text-gray-400"
-                        : "bg-gray-50 text-gray-700"
+                    className={`mb-3 p-3 rounded-lg ${
+                      theme === "dark" ? "bg-gray-700" : "bg-gray-50"
                     }`}
                   >
-                    <div className="text-xs font-medium uppercase tracking-wide mb-1">
-                      {dayName}
+                    <div
+                      className={`text-xs font-medium ${
+                        theme === "dark" ? "text-gray-400" : "text-gray-600"
+                      } mb-1`}
+                    >
+                      {day}
                     </div>
-                    <div className="text-lg font-bold">{date.getDate()}</div>
+                    <div
+                      className={`text-lg font-bold ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-900"
+                      }`}
+                    >
+                      {currentDate.getDate()}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    {isPast ? (
-                      <div className="text-xs text-gray-400 py-2">
-                        Indisponível
-                      </div>
-                    ) : daySchedule?.times && daySchedule.times.length > 0 ? (
-                      daySchedule.times.map((timeSlot) => {
-                        const isSelected = isTimeSelected(
-                          professional.id,
-                          dateStr,
-                          timeSlot.time
-                        );
-
-                        return (
-                          <button
-                            key={timeSlot.time}
-                            onClick={() =>
-                              handleAppointmentSelect(
-                                professional,
-                                dateStr,
-                                timeSlot.time,
-                                type
-                              )
-                            }
-                            className={`w-full px-2 py-2 rounded-lg text-xs font-medium transition-all transform hover:scale-105 ${
-                              isSelected
-                                ? "bg-green-500 text-white shadow-lg scale-105"
-                                : "bg-white border border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-md"
-                            }`}
-                          >
-                            {timeSlot.time}
-                          </button>
-                        );
-                      })
+                    {availableSlot &&
+                    availableSlot.times &&
+                    Array.isArray(availableSlot.times) ? (
+                      availableSlot.times.map((time, timeIndex) => (
+                        <button
+                          key={timeIndex}
+                          onClick={() =>
+                            handleAppointmentSelect(
+                              professional,
+                              dateStr,
+                              time.time,
+                              type
+                            )
+                          }
+                          className={`w-full p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                            isTimeSelected(professional.id, dateStr, time.time)
+                              ? "bg-green-500 text-white shadow-lg"
+                              : `${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                }`
+                          } hover:shadow-md`}
+                        >
+                          {time.time}
+                        </button>
+                      ))
                     ) : (
-                      <div className="text-xs text-gray-400 py-2">
+                      <div
+                        className={`text-xs ${
+                          theme === "dark" ? "text-gray-500" : "text-gray-400"
+                        } p-2`}
+                      >
                         Sem horários
                       </div>
                     )}
@@ -440,109 +576,214 @@ export const StepThree = ({
     professionals: Psychologist[],
     type: "psychologist" | "psychiatrist"
   ) => {
-    if (!professionals || professionals.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <Calendar size={32} className="text-gray-400" />
-          </div>
-          <p className="text-gray-500 text-lg font-medium">
-            Nenhum profissional disponível
-          </p>
-          <p className="text-gray-400 text-sm mt-1">
-            Tente novamente em alguns instantes
-          </p>
-        </div>
-      );
+    if (selectedProfessional) {
+      return renderFullCalendar(selectedProfessional, type);
+    }
+
+    // Verificação de segurança para o array de profissionais
+    if (
+      !professionals ||
+      !Array.isArray(professionals) ||
+      professionals.length === 0
+    ) {
+      return null;
     }
 
     return (
       <div className="space-y-6">
-        {selectedProfessional ? (
-          renderFullCalendar(selectedProfessional, type)
-        ) : (
-          <div className="grid gap-6">
-            {professionals.map((professional) =>
-              renderCompactProfessionalCard(professional, type)
-            )}
-          </div>
-        )}
+        {professionals
+          .filter((professional) => professional && professional.id)
+          .map((professional) =>
+            renderCompactProfessionalCard(professional, type)
+          )}
       </div>
     );
   };
 
-  if (!selectedService || !serviceType) {
+  if (!selectedService) {
     return (
       <div className="text-center py-16">
-        <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-          <Calendar size={32} className="text-gray-400" />
+        <div
+          className={`p-4 ${
+            theme === "dark" ? "bg-gray-700" : "bg-gray-100"
+          } rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center`}
+        >
+          <Calendar
+            size={32}
+            className={`${
+              theme === "dark" ? "text-gray-400" : "text-gray-400"
+            }`}
+          />
         </div>
-        <p className="text-gray-500 text-lg font-medium">
-          Nenhum serviço selecionado
+        <p
+          className={`text-lg font-medium ${
+            theme === "dark" ? "text-gray-300" : "text-gray-500"
+          }`}
+        >
+          Selecione um serviço primeiro
         </p>
-        <p className="text-gray-400 text-sm mt-1">
-          Volte ao passo anterior para selecionar um serviço
+        <p
+          className={`text-sm mt-1 ${
+            theme === "dark" ? "text-gray-500" : "text-gray-400"
+          }`}
+        >
+          Volte ao primeiro passo para escolher um serviço
         </p>
       </div>
     );
   }
 
+  const professionals =
+    serviceType === "psychologist"
+      ? psychologists
+      : serviceType === "psychiatrist"
+      ? psychiatrists
+      : [];
+
   return (
-    <div className="space-y-6">
-      {/* Header com informações do serviço */}
-      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="p-3 bg-white rounded-xl shadow-sm">
-            <Calendar size={24} className="text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Todos os horários disponíveis
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Visualize todos os horários de todos os profissionais e escolha o
-              que melhor se adequa à sua rotina
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div
-              className={`p-2 rounded-lg ${
-                serviceType === "psychologist" ? "bg-blue-100" : "bg-purple-100"
+    <div className="flex flex-col gap-8">
+      {/* Header */}
+      <div
+        className={`${
+          theme === "dark"
+            ? "bg-gradient-to-r from-gray-800 to-gray-700 border-gray-600"
+            : "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200"
+        } border rounded-xl p-6`}
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className={`p-2 ${
+              theme === "dark" ? "bg-gray-600" : "bg-indigo-100"
+            } rounded-lg`}
+          >
+            <Calendar
+              size={24}
+              className={`${
+                theme === "dark" ? "text-indigo-400" : "text-indigo-600"
               }`}
-            >
-              {serviceType === "psychologist" ? (
-                <User size={16} className="text-blue-600" />
-              ) : (
-                <Brain size={16} className="text-purple-600" />
-              )}
-            </div>
-            <span className="font-medium text-gray-700">
-              {serviceType === "psychologist" ? "Psicólogos" : "Psiquiatras"}{" "}
-              disponíveis
-            </span>
+            />
           </div>
-
-          {selectedAppointment && (
-            <div className="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-xl">
-              <CheckCircle size={16} />
-              <span className="font-medium">
-                {new Date(selectedAppointment.date).toLocaleDateString("pt-BR")}{" "}
-                às {selectedAppointment.time} com Dr(a).{" "}
-                {selectedAppointment.professional.userName}
-              </span>
-            </div>
-          )}
+          <h3
+            className={`text-xl font-semibold ${
+              theme === "dark" ? "text-indigo-400" : "text-indigo-800"
+            }`}
+          >
+            Agendar Consulta
+          </h3>
         </div>
+        <p
+          className={`text-sm leading-relaxed ${
+            theme === "dark" ? "text-gray-300" : "text-indigo-600"
+          }`}
+        >
+          Escolha o profissional e o horário que melhor se adequa à sua agenda.
+        </p>
       </div>
 
-      {/* Lista de profissionais ou calendário completo */}
-      {serviceType === "psychologist" &&
-        renderProfessionalsList(psychologists || [], "psychologist")}
-      {serviceType === "psychiatrist" &&
-        renderProfessionalsList(psychiatrists || [], "psychiatrist")}
+      {/* Confirmação da seleção */}
+      {selectedAppointment && (
+        <div
+          className={`${
+            theme === "dark"
+              ? "bg-green-900/30 border-green-700"
+              : "bg-green-50 border-green-200"
+          } border rounded-xl p-6`}
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <CheckCircle size={24} className="text-green-600" weight="fill" />
+            <h4
+              className={`text-lg font-semibold ${
+                theme === "dark" ? "text-green-400" : "text-green-800"
+              }`}
+            >
+              Horário Selecionado
+            </h4>
+          </div>
+          <p
+            className={`text-sm ${
+              theme === "dark" ? "text-green-300" : "text-green-700"
+            }`}
+          >
+            Dr(a). {selectedAppointment.professional.userName || "Profissional"}{" "}
+            - {selectedAppointment.date} às {selectedAppointment.time}
+          </p>
+        </div>
+      )}
+
+      {/* Lista de profissionais */}
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <div
+            className={`p-2 ${
+              theme === "dark" ? "bg-gray-700" : "bg-gray-100"
+            } rounded-lg`}
+          >
+            {serviceType === "psychologist" ? (
+              <User
+                size={20}
+                className={`${
+                  theme === "dark" ? "text-blue-400" : "text-blue-600"
+                }`}
+              />
+            ) : (
+              <Brain
+                size={20}
+                className={`${
+                  theme === "dark" ? "text-purple-400" : "text-purple-600"
+                }`}
+              />
+            )}
+          </div>
+          <h3
+            className={`text-lg font-semibold ${
+              theme === "dark" ? "text-gray-200" : "text-gray-800"
+            }`}
+          >
+            {serviceType === "psychologist" ? "Psicólogos" : "Psiquiatras"}{" "}
+            Disponíveis
+          </h3>
+        </div>
+
+        {professionals && professionals.length > 0 && serviceType ? (
+          renderProfessionalsList(professionals, serviceType)
+        ) : (
+          <div
+            className={`${
+              theme === "dark"
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            } rounded-2xl border-2 p-12 text-center`}
+          >
+            <div
+              className={`p-4 ${
+                theme === "dark" ? "bg-gray-700" : "bg-gray-100"
+              } rounded-2xl inline-block mb-4`}
+            >
+              <Lightbulb
+                size={48}
+                weight="bold"
+                className={`${
+                  theme === "dark" ? "text-gray-400" : "text-gray-400"
+                }`}
+              />
+            </div>
+            <h3
+              className={`text-lg font-semibold ${
+                theme === "dark" ? "text-gray-200" : "text-gray-900"
+              } mb-2`}
+            >
+              Carregando profissionais...
+            </h3>
+            <p
+              className={`text-sm ${
+                theme === "dark" ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Buscando os melhores profissionais para você
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

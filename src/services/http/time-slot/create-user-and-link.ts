@@ -6,6 +6,8 @@ interface CreateUserAndLinkProps {
     name: string;
     email: string;
     phone: string;
+    document: string;
+    avatarFile?: File;
   };
 }
 
@@ -29,6 +31,7 @@ interface CreateUserAndLinkResponse {
       name: string;
       email: string;
       phone: string;
+      avatar?: string | null;
     };
     userCreated: boolean;
   };
@@ -36,10 +39,40 @@ interface CreateUserAndLinkResponse {
 }
 
 export const createUserAndLink = async (userData: CreateUserAndLinkProps) => {
-  const response = await api.post<CreateUserAndLinkResponse>(
-    `/time-slots/create-user-and-link/${userData.reservationId}`,
-    userData.body
-  );
+  // Se há arquivo de avatar, usar FormData
+  if (userData.body.avatarFile) {
+    const formData = new FormData();
+    formData.append("name", userData.body.name);
+    formData.append("email", userData.body.email);
+    formData.append("phone", userData.body.phone);
+    formData.append("document", userData.body.document);
+    formData.append("avatar", userData.body.avatarFile);
 
-  return response.data.data;
+    const response = await api.post<CreateUserAndLinkResponse>(
+      `/time-slots/create-user-and-link/${userData.reservationId}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data.data;
+  } else {
+    // Sem avatar, usar JSON normal
+    const bodyData = {
+      name: userData.body.name,
+      email: userData.body.email,
+      phone: userData.body.phone,
+      document: userData.body.document,
+    };
+
+    const response = await api.post<CreateUserAndLinkResponse>(
+      `/time-slots/create-user-and-link/${userData.reservationId}`,
+      bodyData
+    );
+
+    return response.data.data;
+  }
 };

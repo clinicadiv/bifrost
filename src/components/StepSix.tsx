@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "@/contexts/ThemeContext";
 import { getInstallments } from "@/services/http/payments/get-installments";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -59,7 +60,7 @@ const cardSchema = z.object({
   installments: z.number(),
 });
 
-type PaymentMethod = "pix" | "credit";
+type PaymentMethod = "PIX" | "CREDIT_CARD";
 type PixData = z.infer<typeof pixSchema>;
 type CardData = z.infer<typeof cardSchema>;
 
@@ -84,7 +85,11 @@ interface StepSixProps {
   selectedService?: {
     id: string;
     name: string;
-    price: number;
+    pricing: {
+      originalPrice: number;
+      yourPrice: number;
+      savings: number;
+    };
   } | null;
 }
 
@@ -93,8 +98,9 @@ export const StepSix = ({
   initialData,
   selectedService,
 }: StepSixProps) => {
+  const { theme } = useTheme();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(
-    initialData?.method || "pix"
+    initialData?.method || "PIX"
   );
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [installmentOptions, setInstallmentOptions] = useState<
@@ -128,11 +134,11 @@ export const StepSix = ({
   useEffect(() => {
     if (
       selectedService &&
-      selectedService.price > 0 &&
-      selectedMethod === "credit"
+      selectedService.pricing.yourPrice > 0 &&
+      selectedMethod === "CREDIT_CARD"
     ) {
       setIsLoadingInstallments(true);
-      getInstallments(selectedService.price)
+      getInstallments(selectedService.pricing.yourPrice)
         .then((response) => {
           if (response.success) {
             setInstallmentOptions(response.data.installmentOptions);
@@ -173,7 +179,7 @@ export const StepSix = ({
 
   // Função para notificar mudanças
   const notifyChange = () => {
-    if (selectedMethod === "pix") {
+    if (selectedMethod === "PIX") {
       const pixValues = pixForm.getValues();
 
       // VALIDAÇÃO MANUAL: Aceita CPF (11 dígitos) ou CNPJ (14 dígitos)
@@ -248,7 +254,7 @@ export const StepSix = ({
   // Verificar se devemos notificar no carregamento inicial
   useEffect(() => {
     // Se há dados iniciais válidos, forçar revalidação e notificação
-    if (initialData && selectedMethod === "pix" && initialData.pixData?.cpf) {
+    if (initialData && selectedMethod === "PIX" && initialData.pixData?.cpf) {
       pixForm.setValue("cpf", initialData.pixData.cpf);
       // Forçar revalidação
       pixForm.trigger("cpf").then(() => {
@@ -268,7 +274,7 @@ export const StepSix = ({
   // Monitor de mudanças no CPF para forçar validação
   useEffect(() => {
     const subscription = pixForm.watch((value, { name }) => {
-      if (name === "cpf" && selectedMethod === "pix") {
+      if (name === "cpf" && selectedMethod === "PIX") {
         setTimeout(notifyChange, 200);
       }
     });
@@ -279,7 +285,7 @@ export const StepSix = ({
   useEffect(() => {
     const subscription = cardForm.watch((value, { name }) => {
       if (
-        selectedMethod === "credit" &&
+        selectedMethod === "CREDIT_CARD" &&
         ["cardNumber", "cardHolder", "expiryDate", "cvv", "cpf"].includes(
           name || ""
         )
@@ -291,7 +297,7 @@ export const StepSix = ({
   }, [selectedMethod]);
 
   useEffect(() => {
-    if (selectedMethod === "credit") {
+    if (selectedMethod === "CREDIT_CARD") {
       console.log("selectedInstallments", selectedInstallments);
     }
   }, [selectedInstallments]);
@@ -299,7 +305,7 @@ export const StepSix = ({
   const handleMethodChange = (method: PaymentMethod) => {
     setSelectedMethod(method);
     // Reset forms when changing method
-    if (method === "pix") {
+    if (method === "PIX") {
       cardForm.reset();
     } else {
       pixForm.reset();
@@ -637,9 +643,25 @@ export const StepSix = ({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <h3 className="font-semibold text-green-800 mb-2">Pagamento</h3>
-        <p className="text-sm text-green-600">
+      <div
+        className={`${
+          theme === "dark"
+            ? "bg-green-900/30 border-green-700"
+            : "bg-green-50 border-green-200"
+        } border rounded-lg p-4`}
+      >
+        <h3
+          className={`font-semibold mb-2 ${
+            theme === "dark" ? "text-green-400" : "text-green-800"
+          }`}
+        >
+          Pagamento
+        </h3>
+        <p
+          className={`text-sm ${
+            theme === "dark" ? "text-green-300" : "text-green-600"
+          }`}
+        >
           Escolha sua forma de pagamento preferida para finalizar o agendamento
         </p>
       </div>
@@ -649,10 +671,12 @@ export const StepSix = ({
         {/* PIX */}
         <button
           type="button"
-          onClick={() => handleMethodChange("pix")}
+          onClick={() => handleMethodChange("PIX")}
           className={`flex-1 relative overflow-hidden group transition-all duration-300 ${
-            selectedMethod === "pix"
+            selectedMethod === "PIX"
               ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25 scale-[1.02]"
+              : theme === "dark"
+              ? "bg-gray-800 border border-gray-700 hover:border-green-300 hover:shadow-md text-gray-300 hover:scale-[1.01]"
               : "bg-white border border-gray-200 hover:border-green-300 hover:shadow-md text-gray-700 hover:scale-[1.01]"
           } rounded-xl p-4`}
         >
@@ -660,30 +684,38 @@ export const StepSix = ({
             <div className="flex items-center gap-3">
               <div
                 className={`p-2 rounded-lg ${
-                  selectedMethod === "pix"
+                  selectedMethod === "PIX"
                     ? "bg-white/20"
+                    : theme === "dark"
+                    ? "bg-green-900/30 group-hover:bg-green-900/50"
                     : "bg-green-50 group-hover:bg-green-100"
                 } transition-colors`}
               >
                 <QrCode
                   size={20}
                   className={
-                    selectedMethod === "pix" ? "text-white" : "text-green-600"
+                    selectedMethod === "PIX" ? "text-white" : "text-green-600"
                   }
                 />
               </div>
               <div className="text-left">
                 <div
                   className={`font-semibold ${
-                    selectedMethod === "pix" ? "text-white" : "text-gray-800"
+                    selectedMethod === "PIX"
+                      ? "text-white"
+                      : theme === "dark"
+                      ? "text-gray-200"
+                      : "text-gray-800"
                   }`}
                 >
                   PIX
                 </div>
                 <div
                   className={`text-xs ${
-                    selectedMethod === "pix"
+                    selectedMethod === "PIX"
                       ? "text-green-100"
+                      : theme === "dark"
+                      ? "text-gray-400"
                       : "text-gray-500"
                   }`}
                 >
@@ -691,7 +723,7 @@ export const StepSix = ({
                 </div>
               </div>
             </div>
-            {selectedMethod === "pix" && (
+            {selectedMethod === "PIX" && (
               <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
             )}
           </div>
@@ -703,10 +735,12 @@ export const StepSix = ({
         {/* Cartão de Crédito */}
         <button
           type="button"
-          onClick={() => handleMethodChange("credit")}
+          onClick={() => handleMethodChange("CREDIT_CARD")}
           className={`flex-1 relative overflow-hidden group transition-all duration-300 ${
-            selectedMethod === "credit"
+            selectedMethod === "CREDIT_CARD"
               ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]"
+              : theme === "dark"
+              ? "bg-gray-800 border border-gray-700 hover:border-blue-300 hover:shadow-md text-gray-300 hover:scale-[1.01]"
               : "bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md text-gray-700 hover:scale-[1.01]"
           } rounded-xl p-4`}
         >
@@ -714,30 +748,40 @@ export const StepSix = ({
             <div className="flex items-center gap-3">
               <div
                 className={`p-2 rounded-lg ${
-                  selectedMethod === "credit"
+                  selectedMethod === "CREDIT_CARD"
                     ? "bg-white/20"
+                    : theme === "dark"
+                    ? "bg-blue-900/30 group-hover:bg-blue-900/50"
                     : "bg-blue-50 group-hover:bg-blue-100"
                 } transition-colors`}
               >
                 <CreditCard
                   size={20}
                   className={
-                    selectedMethod === "credit" ? "text-white" : "text-blue-600"
+                    selectedMethod === "CREDIT_CARD"
+                      ? "text-white"
+                      : "text-blue-600"
                   }
                 />
               </div>
               <div className="text-left">
                 <div
                   className={`font-semibold ${
-                    selectedMethod === "credit" ? "text-white" : "text-gray-800"
+                    selectedMethod === "CREDIT_CARD"
+                      ? "text-white"
+                      : theme === "dark"
+                      ? "text-gray-200"
+                      : "text-gray-800"
                   }`}
                 >
                   Cartão de Crédito
                 </div>
                 <div
                   className={`text-xs ${
-                    selectedMethod === "credit"
+                    selectedMethod === "CREDIT_CARD"
                       ? "text-blue-100"
+                      : theme === "dark"
+                      ? "text-gray-400"
                       : "text-gray-500"
                   }`}
                 >
@@ -745,7 +789,7 @@ export const StepSix = ({
                 </div>
               </div>
             </div>
-            {selectedMethod === "credit" && (
+            {selectedMethod === "CREDIT_CARD" && (
               <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
             )}
           </div>
@@ -756,13 +800,23 @@ export const StepSix = ({
       </div>
 
       {/* Formulário PIX */}
-      {selectedMethod === "pix" && (
+      {selectedMethod === "PIX" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Formulário */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div
+            className={`${
+              theme === "dark"
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            } border rounded-lg p-6`}
+          >
             <div className="flex items-center gap-3 mb-6">
               <QrCode size={24} className="text-green-600" />
-              <h4 className="text-lg font-semibold text-gray-800">
+              <h4
+                className={`text-lg font-semibold ${
+                  theme === "dark" ? "text-gray-200" : "text-gray-800"
+                }`}
+              >
                 Pagamento via PIX
               </h4>
             </div>
@@ -771,7 +825,9 @@ export const StepSix = ({
               <div>
                 <label
                   htmlFor="cpf"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className={`block text-sm font-medium mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
                 >
                   CPF/CNPJ do titular <span className="text-red-500">*</span>
                 </label>
@@ -791,7 +847,9 @@ export const StepSix = ({
                   className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all ${
                     pixForm.formState.errors.cpf
                       ? "border-red-500"
-                      : "border-gray-300"
+                      : theme === "dark"
+                      ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                      : "border-gray-300 bg-white text-gray-900"
                   }`}
                 />
                 {pixForm.formState.errors.cpf && (
@@ -801,14 +859,28 @@ export const StepSix = ({
                 )}
               </div>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div
+                className={`${
+                  theme === "dark"
+                    ? "bg-green-900/30 border-green-700"
+                    : "bg-green-50 border-green-200"
+                } border rounded-lg p-4`}
+              >
                 <div className="flex items-start gap-3">
                   <Lock size={20} className="text-green-600 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-green-800">
+                    <p
+                      className={`text-sm font-medium ${
+                        theme === "dark" ? "text-green-400" : "text-green-800"
+                      }`}
+                    >
                       Pagamento Seguro
                     </p>
-                    <p className="text-xs text-green-600 mt-1">
+                    <p
+                      className={`text-xs mt-1 ${
+                        theme === "dark" ? "text-green-300" : "text-green-600"
+                      }`}
+                    >
                       Após confirmar, você receberá o código PIX para pagamento.
                       O agendamento será confirmado automaticamente após o
                       pagamento.
@@ -823,8 +895,18 @@ export const StepSix = ({
           <div className="space-y-6">
             {/* Resumo Compacto - PIX */}
             {selectedService && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <div
+                className={`${
+                  theme === "dark"
+                    ? "bg-gray-800 border-gray-700"
+                    : "bg-white border-gray-200"
+                } border rounded-lg p-4 shadow-sm`}
+              >
+                <h4
+                  className={`text-sm font-semibold mb-3 flex items-center gap-2 ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-800"
+                  }`}
+                >
                   <QrCode size={16} className="text-green-600" />
                   Resumo PIX
                 </h4>
@@ -832,39 +914,69 @@ export const StepSix = ({
                 <div className="space-y-3 text-sm">
                   {/* Serviço */}
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">
+                    <span
+                      className={`${
+                        theme === "dark" ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
                       {selectedService.name}
                     </span>
-                    <span className="font-medium">
+                    <span
+                      className={`font-medium ${
+                        theme === "dark" ? "text-gray-200" : "text-gray-900"
+                      }`}
+                    >
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
-                      }).format(selectedService.price)}
+                      }).format(selectedService.pricing.yourPrice)}
                     </span>
                   </div>
 
                   {/* Vantagem PIX */}
                   {installmentOptions.length > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Método</span>
+                      <span
+                        className={`${
+                          theme === "dark" ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        Método
+                      </span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            theme === "dark"
+                              ? "bg-green-900/30 text-green-400"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
                           Sem juros
                         </span>
                       </div>
                     </div>
                   )}
 
-                  <hr className="border-gray-200" />
+                  <hr
+                    className={`${
+                      theme === "dark" ? "border-gray-600" : "border-gray-200"
+                    }`}
+                  />
 
                   {/* Total */}
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-800">Total</span>
+                    <span
+                      className={`font-medium ${
+                        theme === "dark" ? "text-gray-200" : "text-gray-800"
+                      }`}
+                    >
+                      Total
+                    </span>
                     <span className="font-bold text-green-600 text-lg">
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
-                      }).format(selectedService.price)}
+                      }).format(selectedService.pricing.yourPrice)}
                     </span>
                   </div>
 
@@ -877,13 +989,19 @@ export const StepSix = ({
                       if (
                         highestInstallmentOption &&
                         highestInstallmentOption.totalAmount >
-                          selectedService.price
+                          selectedService.pricing.yourPrice
                       ) {
                         const savings =
                           highestInstallmentOption.totalAmount -
-                          selectedService.price;
+                          selectedService.pricing.yourPrice;
                         return (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                          <div
+                            className={`${
+                              theme === "dark"
+                                ? "bg-green-900/30 border-green-700"
+                                : "bg-green-50 border-green-200"
+                            } border rounded-lg p-3 mt-3`}
+                          >
                             <div className="flex items-center gap-2">
                               <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                                 <span className="text-white text-xs font-bold">
@@ -891,14 +1009,26 @@ export const StepSix = ({
                                 </span>
                               </div>
                               <div>
-                                <p className="text-xs font-medium text-green-800">
+                                <p
+                                  className={`text-xs font-medium ${
+                                    theme === "dark"
+                                      ? "text-green-400"
+                                      : "text-green-800"
+                                  }`}
+                                >
                                   Economize{" "}
                                   {new Intl.NumberFormat("pt-BR", {
                                     style: "currency",
                                     currency: "BRL",
                                   }).format(savings)}
                                 </p>
-                                <p className="text-xs text-green-600">
+                                <p
+                                  className={`text-xs ${
+                                    theme === "dark"
+                                      ? "text-green-300"
+                                      : "text-green-600"
+                                  }`}
+                                >
                                   comparado ao parcelamento
                                 </p>
                               </div>
@@ -911,7 +1041,13 @@ export const StepSix = ({
 
                   {/* Badge do método */}
                   <div className="flex justify-center pt-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    <div
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                        theme === "dark"
+                          ? "bg-green-900/30 text-green-400"
+                          : "bg-green-100 text-green-700"
+                      }`}
+                    >
                       <QrCode size={12} />
                       PIX - Instantâneo
                     </div>
@@ -924,13 +1060,23 @@ export const StepSix = ({
       )}
 
       {/* Formulário Cartão com cartão 3D */}
-      {selectedMethod === "credit" && (
+      {selectedMethod === "CREDIT_CARD" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Formulário */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div
+            className={`${
+              theme === "dark"
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            } border rounded-lg p-6`}
+          >
             <div className="flex items-center gap-3 mb-6">
               <CreditCardIcon size={24} className="text-blue-600" />
-              <h4 className="text-lg font-semibold text-gray-800">
+              <h4
+                className={`text-lg font-semibold ${
+                  theme === "dark" ? "text-gray-200" : "text-gray-800"
+                }`}
+              >
                 Cartão de Crédito
               </h4>
             </div>
@@ -940,7 +1086,9 @@ export const StepSix = ({
               <div>
                 <label
                   htmlFor="cardNumber"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className={`block text-sm font-medium mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
                 >
                   Número do cartão <span className="text-red-500">*</span>
                 </label>
@@ -961,7 +1109,9 @@ export const StepSix = ({
                   className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                     cardForm.formState.errors.cardNumber
                       ? "border-red-500"
-                      : "border-gray-300"
+                      : theme === "dark"
+                      ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                      : "border-gray-300 bg-white text-gray-900"
                   }`}
                 />
                 {cardForm.formState.errors.cardNumber && (
@@ -975,14 +1125,18 @@ export const StepSix = ({
               <div>
                 <label
                   htmlFor="cardHolder"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className={`block text-sm font-medium mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
                 >
                   Nome do portador <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <User
                     size={20}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                      theme === "dark" ? "text-gray-500" : "text-gray-400"
+                    }`}
                   />
                   <input
                     id="cardHolder"
@@ -1002,7 +1156,9 @@ export const StepSix = ({
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                       cardForm.formState.errors.cardHolder
                         ? "border-red-500"
-                        : "border-gray-300"
+                        : theme === "dark"
+                        ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                        : "border-gray-300 bg-white text-gray-900"
                     }`}
                   />
                 </div>
@@ -1018,14 +1174,18 @@ export const StepSix = ({
                 <div>
                   <label
                     htmlFor="expiryDate"
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className={`block text-sm font-medium mb-2 ${
+                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                    }`}
                   >
                     Validade <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Calendar
                       size={20}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                        theme === "dark" ? "text-gray-500" : "text-gray-400"
+                      }`}
                     />
                     <input
                       id="expiryDate"
@@ -1045,7 +1205,9 @@ export const StepSix = ({
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                         cardForm.formState.errors.expiryDate
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : theme === "dark"
+                          ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                          : "border-gray-300 bg-white text-gray-900"
                       }`}
                     />
                   </div>
@@ -1060,7 +1222,9 @@ export const StepSix = ({
                 <div>
                   <label
                     htmlFor="cvv"
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className={`block text-sm font-medium mb-2 ${
+                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                    }`}
                   >
                     CVV <span className="text-red-500">*</span>
                   </label>
@@ -1081,7 +1245,9 @@ export const StepSix = ({
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                       cardForm.formState.errors.cvv
                         ? "border-red-500"
-                        : "border-gray-300"
+                        : theme === "dark"
+                        ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                        : "border-gray-300 bg-white text-gray-900"
                     }`}
                   />
                   {cardForm.formState.errors.cvv && (
@@ -1096,7 +1262,9 @@ export const StepSix = ({
               <div>
                 <label
                   htmlFor="cardCpf"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className={`block text-sm font-medium mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
                 >
                   CPF/CNPJ do portador <span className="text-red-500">*</span>
                 </label>
@@ -1118,7 +1286,9 @@ export const StepSix = ({
                   className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                     cardForm.formState.errors.cpf
                       ? "border-red-500"
-                      : "border-gray-300"
+                      : theme === "dark"
+                      ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                      : "border-gray-300 bg-white text-gray-900"
                   }`}
                 />
                 {cardForm.formState.errors.cpf && (
@@ -1133,14 +1303,18 @@ export const StepSix = ({
                 <div>
                   <label
                     htmlFor="installments"
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className={`block text-sm font-medium mb-2 ${
+                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                    }`}
                   >
                     Parcelamento
                   </label>
                   <div className="relative">
                     <CreditCard
                       size={20}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                        theme === "dark" ? "text-gray-500" : "text-gray-400"
+                      }`}
                     />
                     <select
                       id="installments"
@@ -1153,7 +1327,11 @@ export const StepSix = ({
                         });
                         setTimeout(notifyChange, 100);
                       }}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none bg-white"
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none ${
+                        theme === "dark"
+                          ? "border-gray-600 bg-gray-700 text-gray-200"
+                          : "border-gray-300 bg-white text-gray-900"
+                      }`}
                     >
                       {installmentOptions.map((option) => (
                         <option
@@ -1167,7 +1345,9 @@ export const StepSix = ({
                     {/* Seta customizada para o select */}
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg
-                        className="w-4 h-4 text-gray-400"
+                        className={`w-4 h-4 ${
+                          theme === "dark" ? "text-gray-500" : "text-gray-400"
+                        }`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -1184,9 +1364,19 @@ export const StepSix = ({
 
                   {/* Informações da parcela selecionada */}
                   {selectedInstallments > 1 && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div
+                      className={`mt-2 p-3 border rounded-lg ${
+                        theme === "dark"
+                          ? "bg-blue-900/30 border-blue-700"
+                          : "bg-blue-50 border-blue-200"
+                      }`}
+                    >
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-blue-800">
+                        <span
+                          className={`${
+                            theme === "dark" ? "text-blue-400" : "text-blue-800"
+                          }`}
+                        >
                           {selectedInstallments}x de{" "}
                           {new Intl.NumberFormat("pt-BR", {
                             style: "currency",
@@ -1197,7 +1387,11 @@ export const StepSix = ({
                             )?.installmentValue || 0
                           )}
                         </span>
-                        <span className="text-blue-600">
+                        <span
+                          className={`${
+                            theme === "dark" ? "text-blue-300" : "text-blue-600"
+                          }`}
+                        >
                           Total:{" "}
                           {new Intl.NumberFormat("pt-BR", {
                             style: "currency",
@@ -1218,20 +1412,38 @@ export const StepSix = ({
               {isLoadingInstallments && (
                 <div className="flex items-center justify-center py-4">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                  <span className="ml-2 text-sm text-gray-600">
+                  <span
+                    className={`ml-2 text-sm ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
                     Carregando opções de parcelamento...
                   </span>
                 </div>
               )}
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div
+                className={`${
+                  theme === "dark"
+                    ? "bg-blue-900/30 border-blue-700"
+                    : "bg-blue-50 border-blue-200"
+                } border rounded-lg p-4`}
+              >
                 <div className="flex items-start gap-3">
                   <Lock size={20} className="text-blue-600" />
                   <div>
-                    <p className="text-sm font-medium text-blue-800">
+                    <p
+                      className={`text-sm font-medium ${
+                        theme === "dark" ? "text-blue-400" : "text-blue-800"
+                      }`}
+                    >
                       Pagamento Seguro
                     </p>
-                    <p className="text-xs mt-1 text-blue-600">
+                    <p
+                      className={`text-xs mt-1 ${
+                        theme === "dark" ? "text-blue-300" : "text-blue-600"
+                      }`}
+                    >
                       Seus dados são protegidos com criptografia SSL. O
                       pagamento será processado de forma segura.
                     </p>
@@ -1252,8 +1464,18 @@ export const StepSix = ({
 
             {/* Resumo Compacto - Apenas para cartão */}
             {selectedService && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <div
+                className={`${
+                  theme === "dark"
+                    ? "bg-gray-800 border-gray-700"
+                    : "bg-white border-gray-200"
+                } border rounded-lg p-4 shadow-sm`}
+              >
+                <h4
+                  className={`text-sm font-semibold mb-3 flex items-center gap-2 ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-800"
+                  }`}
+                >
                   <CreditCard size={16} className="text-blue-600" />
                   Resumo
                 </h4>
@@ -1261,24 +1483,40 @@ export const StepSix = ({
                 <div className="space-y-3 text-sm">
                   {/* Serviço */}
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">
+                    <span
+                      className={`${
+                        theme === "dark" ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
                       {selectedService.name}
                     </span>
-                    <span className="font-medium">
+                    <span
+                      className={`font-medium ${
+                        theme === "dark" ? "text-gray-200" : "text-gray-900"
+                      }`}
+                    >
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
-                      }).format(selectedService.price)}
+                      }).format(selectedService.pricing.yourPrice)}
                     </span>
                   </div>
 
                   {/* Parcelamento */}
                   {selectedInstallments > 1 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">
+                      <span
+                        className={`${
+                          theme === "dark" ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
                         {selectedInstallments}x no cartão
                       </span>
-                      <span className="text-xs">
+                      <span
+                        className={`text-xs ${
+                          theme === "dark" ? "text-gray-300" : "text-gray-600"
+                        }`}
+                      >
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
                           currency: "BRL",
@@ -1292,11 +1530,21 @@ export const StepSix = ({
                     </div>
                   )}
 
-                  <hr className="border-gray-200" />
+                  <hr
+                    className={`${
+                      theme === "dark" ? "border-gray-600" : "border-gray-200"
+                    }`}
+                  />
 
                   {/* Total */}
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-800">Total</span>
+                    <span
+                      className={`font-medium ${
+                        theme === "dark" ? "text-gray-200" : "text-gray-800"
+                      }`}
+                    >
+                      Total
+                    </span>
                     <span className="font-bold text-green-600 text-lg">
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
@@ -1305,15 +1553,21 @@ export const StepSix = ({
                         selectedInstallments > 1
                           ? installmentOptions.find(
                               (opt) => opt.installments === selectedInstallments
-                            )?.totalAmount || selectedService.price
-                          : selectedService.price
+                            )?.totalAmount || selectedService.pricing.yourPrice
+                          : selectedService.pricing.yourPrice
                       )}
                     </span>
                   </div>
 
                   {/* Badge do método */}
                   <div className="flex justify-center pt-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    <div
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                        theme === "dark"
+                          ? "bg-blue-900/30 text-blue-400"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
                       <CreditCard size={12} />
                       Cartão - Seguro
                     </div>

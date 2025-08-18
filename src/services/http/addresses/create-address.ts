@@ -38,9 +38,14 @@ export interface CreateAddressResponse {
 }
 
 export async function createAddress(
-  data: CreateAddressData
+  data: CreateAddressData,
+  token: string
 ): Promise<CreateAddressResponse> {
-  const response = await api.post<CreateAddressResponse>("/addresses", data);
+  const response = await api.post<CreateAddressResponse>("/addresses", data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   return response.data;
 }

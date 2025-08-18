@@ -1,5 +1,6 @@
 export const PUBLIC_ROUTES = [
   "/register",
+  "/criar-conta",
   "/forgot-password",
   "/reset-password",
   "/nova-consulta",
