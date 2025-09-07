@@ -46,7 +46,7 @@ export interface MedicalRecordAppointment {
   status: string;
   payment: boolean;
   serviceId: string;
-  urlMeet: string;
+  meetLink: string;
   asaasPaymentId: string;
   paymentStatus: string;
   amount: number;

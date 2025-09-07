@@ -1,7 +1,11 @@
 "use client";
 
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
+import type {
+  GetMedicalRecordsResponse,
+  MedicalRecord,
+} from "@/services/http/medical-records/get-medical-records";
+// import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler"; // Removido temporariamente
 import { queryKeys } from "@/lib/query-keys";
 import {
   getMedicalRecords,
@@ -25,7 +29,7 @@ export function useMedicalRecords(
   params?: GetMedicalRecordsParams
 ) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Removido temporariamente
 
   const query = useQuery({
     queryKey: queryKeys.medicalRecordsByUser(userId, params),
@@ -46,11 +50,11 @@ export function useMedicalRecords(
     gcTime: 30 * 60 * 1000, // 30 minutos no cache
 
     // Manter dados anteriores durante paginação
-    keepPreviousData: true,
+    // keepPreviousData: true, // Removido no React Query v5
 
     // Error handling integrado
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
 
     // Transformação dos dados
     select: (data) => {
@@ -100,7 +104,7 @@ export function useMedicalRecords(
     isFetching: query.isFetching,
     dataUpdatedAt: query.dataUpdatedAt,
     isStale: query.isStale,
-    isPreviousData: query.isPreviousData, // Útil para paginação
+    // isPreviousData: query.isPreviousData, // Removido no React Query v5
   };
 }
 
@@ -111,10 +115,10 @@ export function useMedicalRecords(
  */
 export function useInfiniteMedicalRecords(userId: string, limit: number = 10) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Removido temporariamente
 
   return useInfiniteQuery({
-    queryKey: queryKeys.medicalRecordsByUser(userId, { limit, infinite: true }),
+    queryKey: queryKeys.medicalRecordsByUser(userId, { limit }),
 
     queryFn: async ({ pageParam = 1 }) => {
       if (!token) {
@@ -128,35 +132,42 @@ export function useInfiniteMedicalRecords(userId: string, limit: number = 10) {
     },
 
     enabled: !!userId && !!token,
+    initialPageParam: 1,
 
     // Configuração para próxima página
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: (lastPage: { page: number; total: number }) => {
       const hasMore = lastPage.page * limit < lastPage.total;
       return hasMore ? lastPage.page + 1 : undefined;
     },
 
     // Configuração para página anterior (opcional)
-    getPreviousPageParam: (firstPage) => {
+    getPreviousPageParam: (firstPage: { page: number }) => {
       return firstPage.page > 1 ? firstPage.page - 1 : undefined;
     },
 
     staleTime: 10 * 60 * 1000,
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
 
     select: (data) => ({
       ...data,
       // Flatten todas as páginas
-      allRecords: data.pages.flatMap((page) => page.results),
+      allRecords: data.pages.flatMap(
+        (page: GetMedicalRecordsResponse) => page.results
+      ),
 
       // Separar por tipo
       allPsychologicalRecords: data.pages
-        .flatMap((page) => page.results)
-        .filter((record) => record.medical.type === "psychologist"),
+        .flatMap((page: GetMedicalRecordsResponse) => page.results)
+        .filter(
+          (record: MedicalRecord) => record.medical.type === "psychologist"
+        ),
 
       allPsychiatricRecords: data.pages
-        .flatMap((page) => page.results)
-        .filter((record) => record.medical.type === "psychiatrist"),
+        .flatMap((page: GetMedicalRecordsResponse) => page.results)
+        .filter(
+          (record: MedicalRecord) => record.medical.type === "psychiatrist"
+        ),
 
       // Metadados
       totalRecords: data.pages[0]?.total || 0,
@@ -173,7 +184,7 @@ export function useMedicalRecordsByType(
   type: "psychologist" | "psychiatrist",
   params?: Omit<GetMedicalRecordsParams, "type">
 ) {
-  return useMedicalRecords(userId, { ...params, type });
+  return useMedicalRecords(userId, { ...params /* type */ }); // type removido temporariamente
 }
 
 /**
@@ -181,7 +192,7 @@ export function useMedicalRecordsByType(
  */
 export function useMedicalRecord(recordId: string) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Removido temporariamente
 
   return useQuery({
     queryKey: queryKeys.medicalRecordDetail(recordId),
@@ -206,7 +217,7 @@ export function useMedicalRecord(recordId: string) {
 
     enabled: !!recordId && !!token,
     staleTime: 15 * 60 * 1000, // 15 minutos para registros individuais
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
   });
 }

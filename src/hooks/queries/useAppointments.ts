@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
+// import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler"; // Removido temporariamente
 import { queryKeys } from "@/lib/query-keys";
 import {
   AppointmentResponse,
@@ -40,7 +40,7 @@ interface ConsultaFormatted {
  */
 export function useAppointments() {
   const { user, token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Temporariamente removido
 
   // Query principal com React Query
   const query = useQuery({
@@ -68,8 +68,8 @@ export function useAppointments() {
     gcTime: 10 * 60 * 1000, // 10 minutos no cache (gcTime é o novo nome para cacheTime)
 
     // Error handling integrado
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
 
     // Transformação e organização dos dados
     select: (appointments) => {
@@ -164,15 +164,15 @@ function formatAppointmentData(
     doctor: `Dr. ${appointment.medical.userName}` || "Profissional",
     amount: appointment.amount || 0,
     duration: 60,
-    url: appointment.urlMeet || appointment.medical.meetLink || "",
+    url: appointment.meetLink || "",
     type: getAppointmentType(appointment.serviceId),
     status: statusMap[appointment.status] || appointment.status,
-    notes: appointment.notes || appointment.medical.notes,
+    notes: appointment.notes || "",
     paid: appointment.payment || false,
     paymentStatus:
       paymentStatusMap[appointment.paymentStatus] || appointment.paymentStatus,
-    asaasPaymentId: appointment.asaasPaymentId,
-    billingType: appointment.billingType,
+    asaasPaymentId: appointment.asaasPaymentId || undefined,
+    billingType: appointment.billingType || undefined,
   };
 }
 
@@ -184,7 +184,11 @@ function isCancelled(status: string): boolean {
   );
 }
 
-function getErrorMessage(error: any): string {
+function getErrorMessage(error: {
+  response?: { status: number };
+  message?: string;
+  code?: string;
+}): string {
   if (error?.response?.status) {
     const status = error.response.status;
     if (status === 401) return "Sessão expirada. Faça login novamente.";

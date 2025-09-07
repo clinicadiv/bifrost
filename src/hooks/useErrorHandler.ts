@@ -60,37 +60,66 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     }
   }, [defaultOptions.retryConfig]);
 
+  // Gerenciamento de toasts
+  const addToast = useCallback(
+    (error: StandardErrorResponse, result: ErrorHandlerResult) => {
+      const id = `toast_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      setToasts((prev) => [...prev, { id, error, result }]);
+
+      // Auto-remove toast após 5 segundos se não for crítico
+      if (
+        !["authentication", "authorization", "payment"].includes(
+          error.category || ""
+        )
+      ) {
+        setTimeout(() => {
+          removeToast(id);
+        }, 5000);
+      }
+    },
+    []
+  );
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
   // Listener para mudanças no estado do error handler
   useEffect(() => {
     const unsubscribe = errorHandler.addListener((error, result) => {
-      setErrorState(errorHandler.getState());
-      defaultOptions.onError?.(error, result);
+      // Use setTimeout para evitar setState durante render
+      setTimeout(() => {
+        setErrorState(errorHandler.getState());
+        defaultOptions.onError?.(error, result);
 
-      // Decide como exibir o erro baseado nas opções e no resultado
-      // Prioriza modal sobre toast para melhor experiência do usuário
-      if (
-        result.action === "show-modal" ||
-        (defaultOptions.showModal !== false &&
-          result.action !== "show-toast" &&
-          result.action !== "highlight-field" &&
-          result.action !== "show-inline" &&
-          result.action !== "redirect-login" &&
-          result.action !== "redirect-payment" &&
-          result.action !== "retry" &&
-          result.action !== "ignore")
-      ) {
-        setModalError({ error, result });
-      } else if (
-        result.action === "show-toast" ||
-        (defaultOptions.showToast === true &&
-          defaultOptions.showModal === false)
-      ) {
-        addToast(error, result);
-      }
+        // Decide como exibir o erro baseado nas opções e no resultado
+        // Prioriza modal sobre toast para melhor experiência do usuário
+        if (
+          result.action === "show-modal" ||
+          (defaultOptions.showModal !== false &&
+            result.action !== "show-toast" &&
+            result.action !== "highlight-field" &&
+            result.action !== "show-inline" &&
+            result.action !== "redirect-login" &&
+            result.action !== "redirect-payment" &&
+            result.action !== "retry" &&
+            result.action !== "ignore")
+        ) {
+          setModalError({ error, result });
+        } else if (
+          result.action === "show-toast" ||
+          (defaultOptions.showToast === true &&
+            defaultOptions.showModal === false)
+        ) {
+          addToast(error, result);
+        }
+      }, 0);
     });
 
     return unsubscribe;
-  }, [defaultOptions]);
+  }, [defaultOptions, addToast]);
 
   // Função para processar um erro
   const handleError = useCallback(
@@ -121,32 +150,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     },
     []
   );
-
-  // Gerenciamento de toasts
-  const addToast = useCallback(
-    (error: StandardErrorResponse, result: ErrorHandlerResult) => {
-      const id = `toast_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
-      setToasts((prev) => [...prev, { id, error, result }]);
-
-      // Auto-remove toast após 5 segundos se não for crítico
-      if (
-        !["authentication", "authorization", "payment"].includes(
-          error.category || ""
-        )
-      ) {
-        setTimeout(() => {
-          removeToast(id);
-        }, 5000);
-      }
-    },
-    []
-  );
-
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
 
   // Ações de erro
   const handleAction = useCallback(

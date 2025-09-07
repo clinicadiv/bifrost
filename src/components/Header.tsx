@@ -39,7 +39,8 @@ export const Header = () => {
   const { data: unreadNotificationsData, refetch: refreshUnreadCount } =
     useUnreadNotificationsCount(user?.id || "");
 
-  const unreadNotificationsCount = unreadNotificationsData?.count || 0;
+  const unreadNotificationsCount =
+    unreadNotificationsData?.data?.unreadCount || 0;
 
   // Funções simplificadas (React Query gerencia o estado automaticamente)
   const decrementUnreadCount = () => {

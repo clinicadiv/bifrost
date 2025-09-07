@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
+import type { Address } from "@/types/Address";
+// import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler"; // Removido temporariamente
 import { queryKeys } from "@/lib/query-keys";
 import { getUserAddresses } from "@/services/http/addresses";
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +18,7 @@ import { useQuery } from "@tanstack/react-query";
  */
 export function useAddresses(userId: string) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Temporariamente removido
 
   return useQuery({
     queryKey: queryKeys.addressesByUser(userId),
@@ -33,8 +34,8 @@ export function useAddresses(userId: string) {
     staleTime: 10 * 60 * 1000, // 10 minutos
     gcTime: 30 * 60 * 1000, // 30 minutos
 
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
 
     // Transformar dados para facilitar uso
     select: (data) => {
@@ -55,8 +56,14 @@ export function useAddresses(userId: string) {
         total: addresses.length,
         hasAddresses: addresses.length > 0,
         // Separar por tipo se necessário
-        residenciais: addresses.filter((addr) => addr.type === "residential"),
-        comerciais: addresses.filter((addr) => addr.type === "commercial"),
+        residenciais: addresses.filter(
+          (addr: Address & { type?: string }) =>
+            (addr as { type?: string }).type === "residential"
+        ),
+        comerciais: addresses.filter(
+          (addr: Address & { type?: string }) =>
+            (addr as { type?: string }).type === "commercial"
+        ),
         // Endereço principal
         principal: addresses.find((addr) => addr.isDefault) || addresses[0],
       };
@@ -72,7 +79,7 @@ export function useAddresses(userId: string) {
  * Hook para buscar endereço específico por ID
  */
 export function useAddress(addressId: string) {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const addresses = useAddresses(user?.id || "");
 
   return {

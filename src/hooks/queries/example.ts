@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
+// import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler"; // Removido temporariamente
 import { queryKeys } from "@/lib/query-keys";
 import { useQuery } from "@tanstack/react-query";
 
@@ -16,7 +16,7 @@ import { useQuery } from "@tanstack/react-query";
  */
 export function useExampleQuery() {
   const { user, token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Temporariamente removido
 
   return useQuery({
     // Query key usando nossa factory
@@ -43,8 +43,8 @@ export function useExampleQuery() {
     enabled: !!user?.id && !!token,
 
     // Integração com nosso error handler
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
 
     // Cache por 5 minutos
     staleTime: 5 * 60 * 1000,

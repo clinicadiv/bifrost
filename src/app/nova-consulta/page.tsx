@@ -863,19 +863,19 @@ export default function NovaConsulta() {
 
   return (
     <div className="w-full max-h-full flex flex-col gap-5">
-      <div className="w-full max-h-full flex flex-1 gap-5 ">
+      <div className="w-full max-h-full flex flex-1 gap-5">
         {/* Esconder o menu lateral quando estiver no step 7 */}
         {currentStep !== 7 && (
-          <div className="flex flex-col gap-2 w-max max-w-[280px] h-max bg-white border border-gray-200 shadow-sm p-5 rounded-xl">
+          <div className="flex flex-col gap-2 w-max max-w-[280px] h-max bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm p-5 rounded-xl">
             {steps.map((step, index) => (
               <div key={step.id} className="relative">
                 <div
                   className={`flex w-full gap-3 p-3 rounded-lg transition-colors duration-200 ${
                     step.status === 1
-                      ? "bg-primary-dark/5 border-l-2 border-primary-dark"
+                      ? "bg-primary-dark/5 dark:bg-primary-dark/20 border-l-2 border-primary-dark"
                       : step.status === 2
-                      ? "bg-green-50 border-l-2 border-green-500"
-                      : "hover:bg-gray-50"
+                      ? "bg-green-50 dark:bg-green-900/30 border-l-2 border-green-500"
+                      : "hover:bg-gray-50 dark:hover:bg-slate-700"
                   } ${step.status === 0 ? "opacity-60" : "opacity-100"}`}
                 >
                   <div className="flex pt-0.5 justify-center">
@@ -902,10 +902,10 @@ export default function NovaConsulta() {
                     <h2
                       className={`font-satoshi font-medium text-sm ${
                         step.status === 1
-                          ? "text-primary-dark"
+                          ? "text-primary-dark dark:text-primary-light"
                           : step.status === 2
-                          ? "text-green-700"
-                          : "text-gray-500"
+                          ? "text-green-700 dark:text-green-400"
+                          : "text-gray-500 dark:text-slate-400"
                       }`}
                     >
                       {step.title}
@@ -913,10 +913,10 @@ export default function NovaConsulta() {
                     <p
                       className={`text-xs ${
                         step.status === 1
-                          ? "text-primary-dark/70"
+                          ? "text-primary-dark/70 dark:text-primary-light/70"
                           : step.status === 2
-                          ? "text-green-600/80"
-                          : "text-gray-400"
+                          ? "text-green-600/80 dark:text-green-400/80"
+                          : "text-gray-400 dark:text-slate-500"
                       }`}
                     >
                       {step.description}
@@ -930,10 +930,10 @@ export default function NovaConsulta() {
                     <div
                       className={`w-px h-3 ${
                         step.status === 2
-                          ? "bg-green-400"
+                          ? "bg-green-400 dark:bg-green-500"
                           : step.status === 1
-                          ? "bg-primary-dark"
-                          : "bg-gray-300"
+                          ? "bg-primary-dark dark:bg-primary-light"
+                          : "bg-gray-300 dark:bg-slate-600"
                       }`}
                     ></div>
                   </div>
@@ -942,8 +942,8 @@ export default function NovaConsulta() {
             ))}
 
             {/* Indicador de progresso */}
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-600">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 mb-2">
                 <span>Progresso</span>
                 <span>
                   {Math.round(
@@ -954,9 +954,9 @@ export default function NovaConsulta() {
                   %
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-1.5">
                 <div
-                  className="h-full bg-primary-dark rounded-full transition-all duration-300"
+                  className="h-full bg-primary-dark dark:bg-primary-light rounded-full transition-all duration-300"
                   style={{
                     width: `${
                       (steps.filter((s) => s.status === 2).length /
@@ -971,11 +971,11 @@ export default function NovaConsulta() {
         )}
 
         <div
-          className={`w-full flex-1 flex max-h-[calc(100vh-170px)] flex-col border border-gray-300 p-7 rounded-lg overflow-y-auto ${
+          className={`w-full flex-1 flex max-h-[calc(100vh-170px)] flex-col border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 p-7 rounded-lg overflow-y-auto ${
             currentStep === 7 ? "max-w-none" : ""
           }`}
         >
-          <h2 className="text-gray-700 text-2xl font-satoshi font-semibold mb-4">
+          <h2 className="text-gray-700 dark:text-slate-200 text-2xl font-satoshi font-semibold mb-4">
             {currentStep === 1 && "Selecione o serviço"}
             {currentStep === 2 && "Informações do serviço"}
             {currentStep === 3 && "Agende suas consultas"}

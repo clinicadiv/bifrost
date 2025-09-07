@@ -2,6 +2,22 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Service, UserBenefitsData } from "@/types";
 import { CheckCircle, Circle, Gift, Trophy } from "@phosphor-icons/react";
 
+// Helper function to safely format price
+const formatPrice = (price: number | undefined | null): string => {
+  const validPrice = typeof price === "number" && !isNaN(price) ? price : 0;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(validPrice);
+};
+
+// Helper function to get the correct price (fallback to yourPrice if finalPrice doesn't exist)
+const getServicePrice = (service: Service): number => {
+  // Try finalPrice first, then fallback to yourPrice for backward compatibility
+  const pricing = service.pricing as any;
+  return pricing.finalPrice ?? pricing.yourPrice ?? 0;
+};
+
 export const Package = ({
   service,
   setService,
@@ -14,6 +30,17 @@ export const Package = ({
   userBenefits?: UserBenefitsData;
 }) => {
   const { theme } = useTheme();
+
+  // Debug: Log service data
+  console.log("Service data:", service);
+  console.log("Service pricing:", service.pricing);
+  console.log(
+    "Final price:",
+    service.pricing.finalPrice,
+    typeof service.pricing.finalPrice
+  );
+  console.log("Calculated service price:", getServicePrice(service));
+
   const handleSelectPackage = () => {
     setService(service);
   };
@@ -204,9 +231,9 @@ export const Package = ({
                   }).format(
                     service.consultationType === "PSYCHIATRIC"
                       ? userBenefits?.psychiatry?.yourPrice ||
-                          service.pricing.yourPrice
+                          getServicePrice(service)
                       : userBenefits?.psychology?.yourPrice ||
-                          service.pricing.yourPrice
+                          getServicePrice(service)
                   )}
                 </div>
               </div>
@@ -217,10 +244,7 @@ export const Package = ({
                     theme === "dark" ? "text-gray-200" : "text-gray-800"
                   }`}
                 >
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(service.pricing.yourPrice)}
+                  {formatPrice(getServicePrice(service))}
                 </div>
                 <div
                   className={`text-xs ${

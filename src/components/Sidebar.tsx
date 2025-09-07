@@ -1,6 +1,9 @@
 "use client";
 
+import { useUserBenefits } from "@/hooks/queries/useUserBenefits";
 import { useAuthStore } from "@/hooks/useAuthStore";
+import { useDependentAccess } from "@/hooks/useDependentAccess";
+import { UserBenefitsData } from "@/types";
 import {
   BuildingOfficeIcon,
   CalendarDotsIcon,
@@ -10,6 +13,7 @@ import {
   MapPin,
   SignInIcon,
   SquaresFourIcon,
+  Users,
 } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,6 +32,11 @@ const LINKS = [
 export const Sidebar = () => {
   const pathname = usePathname();
   const { user, isLoading, openLoginModal } = useAuthStore();
+  const { hasAccess: hasDependentAccess, isLoading: isDependentAccessLoading } =
+    useDependentAccess();
+  const { data: userBenefits, isLoading: isLoadingBenefits } = useUserBenefits(
+    user?.id || ""
+  );
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const handleOpenSettingsModal = () => {
@@ -36,6 +45,16 @@ export const Sidebar = () => {
 
   const handleCloseSettingsModal = () => {
     setIsSettingsModalOpen(false);
+  };
+
+  // Função para verificar se o plano é INDIVIDUAL
+  const hasIndividualPlan = () => {
+    if (!userBenefits?.success || isLoadingBenefits) return false;
+
+    const benefitsData = userBenefits.data as UserBenefitsData;
+    return (
+      benefitsData?.hasActivePlan && benefitsData?.plan?.type === "INDIVIDUAL"
+    );
   };
 
   return (
@@ -104,6 +123,40 @@ export const Sidebar = () => {
                     </div>
                   );
                 })}
+
+                {/* Dependentes - Condicional baseado no plano INDIVIDUAL */}
+                {!isLoadingBenefits && hasIndividualPlan() && (
+                  <div className="relative">
+                    {pathname === "/dependentes" && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full bg-div-green"></div>
+                    )}
+
+                    <Link
+                      href="/dependentes"
+                      className={`
+                        relative flex items-center gap-3 px-4 py-3 mx-1 rounded-lg text-sm font-medium transition-colors duration-200
+                        ${
+                          pathname === "/dependentes"
+                            ? "text-div-green bg-div-green/10"
+                            : "text-slate-300 hover:text-div-green hover:bg-div-green/5"
+                        }
+                      `}
+                    >
+                      <Users
+                        size={18}
+                        weight={
+                          pathname === "/dependentes" ? "fill" : "regular"
+                        }
+                        className={`${
+                          pathname === "/dependentes"
+                            ? "text-div-green"
+                            : "text-slate-400"
+                        }`}
+                      />
+                      <span>Dependentes</span>
+                    </Link>
+                  </div>
+                )}
               </nav>
             </div>
           )}

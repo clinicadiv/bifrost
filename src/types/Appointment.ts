@@ -31,20 +31,38 @@ export interface Appointment {
   appointmentDate: string;
   appointmentTime: string;
   status: string;
-  notes?: string;
+  notes?: string | null;
   amount: number;
+  originalAmount: number;
   createdAt: string;
   updatedAt: string;
+  asaasPaymentId?: string | null;
+  billingType?: string | null;
+  consultationType: string;
+  copayAmount?: number | null;
+  googleEventId?: string | null;
+  meetLink: string;
+  payment: boolean;
+  paymentDate?: string | null;
+  paymentDueDate?: string | null;
+  paymentStatus: string;
+  planDiscountAmount: number;
+  serviceId: string;
+  subscriptionId?: string | null;
+  userId?: string | null;
   medical: {
     id: string;
-    name: string;
-    email: string;
+    crp: string;
+    medicalId: string;
+    type: string;
+    userName: string;
   };
   patient: {
     id: string;
     name: string;
     email: string;
-    phone?: string;
+    phone: string;
+    patientId: string;
   };
 }
 

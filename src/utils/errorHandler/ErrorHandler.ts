@@ -368,16 +368,27 @@ export class ErrorHandler {
     if (this.loggerFn) {
       this.loggerFn(level, `Error ${error.code || error.status}`, logData);
     } else {
-      const logMethod =
-        level === "error"
-          ? console.error
-          : level === "warn"
-          ? console.warn
-          : console.info;
-      logMethod(
-        `[ErrorHandler] ${error.code || error.status}: ${error.title}`,
-        logData
-      );
+      // Usar setTimeout para evitar problemas durante render
+      setTimeout(() => {
+        const logMethod =
+          level === "error"
+            ? console.error
+            : level === "warn"
+            ? console.warn
+            : console.info;
+
+        try {
+          logMethod(
+            `[ErrorHandler] ${error.code || error.status}: ${error.title}`,
+            logData
+          );
+        } catch (logError) {
+          // Fallback silencioso se console não estiver disponível
+          console.log(
+            `[ErrorHandler] ${error.code || error.status}: ${error.title}`
+          );
+        }
+      }, 0);
     }
   }
 
@@ -388,13 +399,16 @@ export class ErrorHandler {
     error: StandardErrorResponse,
     result: ErrorHandlerResult
   ): void {
-    this.listeners.forEach((listener) => {
-      try {
-        listener(error, result);
-      } catch (err) {
-        console.error("[ErrorHandler] Erro no listener:", err);
-      }
-    });
+    // Usar setTimeout para evitar setState durante render
+    setTimeout(() => {
+      this.listeners.forEach((listener) => {
+        try {
+          listener(error, result);
+        } catch (err) {
+          console.error("[ErrorHandler] Erro no listener:", err);
+        }
+      });
+    }, 0);
   }
 }
 

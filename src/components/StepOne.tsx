@@ -19,8 +19,12 @@ export const StepOne = ({
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["services"],
-    queryFn: () => findAllServices(user?.id || ""),
-    enabled: !!user?.id,
+    queryFn: async () => {
+      const result = await findAllServices(user?.id || "", token || "");
+      console.log("Services API Response:", result);
+      return result;
+    },
+    enabled: !!user?.id && !!token,
   });
 
   const { data: userBenefits, isLoading: isLoadingBenefits } = useUserBenefits(

@@ -1,10 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/hooks/useAuthStore";
-import {
-  useQueryErrorHandler,
-  useReactQueryErrorHandler,
-} from "@/hooks/useReactQueryErrorHandler";
+import { useReactQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
 import { queryKeys } from "@/lib/query-keys";
 import {
   deleteAllNotifications,
@@ -28,7 +25,7 @@ export function useNotifications(
   }
 ) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Temporariamente removido
 
   return useQuery({
     queryKey: queryKeys.notificationsList(userId, params),
@@ -49,8 +46,8 @@ export function useNotifications(
     staleTime: 1 * 60 * 1000, // 1 minuto
     gcTime: 5 * 60 * 1000, // 5 minutos
 
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
   });
 }
 
@@ -59,7 +56,7 @@ export function useNotifications(
  */
 export function useUnreadNotificationsCount(userId: string) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Temporariamente removido
 
   return useQuery({
     queryKey: queryKeys.notificationsUnreadCount(userId),
@@ -78,8 +75,8 @@ export function useUnreadNotificationsCount(userId: string) {
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 2 * 60 * 1000, // 2 minutos
 
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
   });
 }
 

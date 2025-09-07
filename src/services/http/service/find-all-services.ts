@@ -7,20 +7,33 @@ interface FindAllServicesResponse {
     name: string;
     description: string;
     consultationType: "PSYCHOLOGICAL" | "PSYCHIATRIC";
+    status: boolean;
     pricing: {
       originalPrice: number;
-      yourPrice: number;
-      savings: number;
+      finalPrice: number;
+      hasDiscount: boolean;
+      planInfo: {
+        planName: string;
+        copayAmount: number;
+        remainingSessions: number;
+      };
     };
-    status: boolean;
   }[];
+  userHasPlan: boolean;
+  message: string;
 }
 
 export async function findAllServices(
-  userId: string
+  userId: string,
+  token: string
 ): Promise<FindAllServicesResponse> {
   const response = await api.get<FindAllServicesResponse>(
-    `/services?userId=${userId}`
+    `/services-pricing?userId=${userId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   return response.data;

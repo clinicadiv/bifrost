@@ -184,6 +184,37 @@ export const queryKeys = {
     type?: string;
     isDefault?: boolean;
   }) => ["addresses", "list", params] as const,
+
+  // ===== DEPENDENTS =====
+  dependents: ["dependents"] as const,
+
+  dependentsList: (params?: {
+    userId?: string;
+    subscriptionId?: string;
+    status?: boolean;
+    relationship?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) => ["dependents", "list", params] as const,
+
+  dependentsByUser: (userId: string) => ["dependents", "user", userId] as const,
+
+  dependentsMyList: () => ["dependents", "my"] as const,
+
+  dependentDetail: (id: string) => ["dependents", "detail", id] as const,
+
+  dependentStatistics: (userId: string) =>
+    ["dependents", "statistics", userId] as const,
+
+  dependentLimitCheck: (subscriptionId: string) =>
+    ["dependents", "limit-check", subscriptionId] as const,
+
+  dependentValidation: (data: {
+    subscriptionId: string;
+    name: string;
+    document: string;
+  }) => ["dependents", "validation", data] as const,
 } as const;
 
 // Utilities para manipular query keys
@@ -199,6 +230,10 @@ export const queryKeyUtils = {
 
   isUserKey: (queryKey: unknown[]) => {
     return queryKey[0] === "user";
+  },
+
+  isDependentKey: (queryKey: unknown[]) => {
+    return queryKey[0] === "dependents";
   },
 
   // Extrair userId de uma query key
@@ -222,6 +257,8 @@ export const queryKeyUtils = {
       queryKeys.notificationsList(userId),
       queryKeys.psychiatricDataByUser(userId),
       queryKeys.addressesByUser(userId),
+      queryKeys.dependentsByUser(userId),
+      queryKeys.dependentStatistics(userId),
     ];
   },
 

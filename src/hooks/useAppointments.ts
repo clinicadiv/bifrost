@@ -78,16 +78,16 @@ export function useAppointments() {
       doctor: `Dr. ${appointment.medical.userName}` || "Profissional",
       amount: appointment.amount || 0,
       duration: 60,
-      url: appointment.urlMeet || appointment.medical.meetLink || "",
+      url: appointment.meetLink || "",
       type: getAppointmentType(appointment.serviceId),
       status: statusMap[appointment.status] || appointment.status,
-      notes: appointment.notes || appointment.medical.notes,
+      notes: appointment.notes || "",
       paid: appointment.payment || false,
       paymentStatus:
         paymentStatusMap[appointment.paymentStatus] ||
         appointment.paymentStatus,
-      asaasPaymentId: appointment.asaasPaymentId,
-      billingType: appointment.billingType,
+      asaasPaymentId: appointment.asaasPaymentId || undefined,
+      billingType: appointment.billingType || undefined,
     };
   };
 

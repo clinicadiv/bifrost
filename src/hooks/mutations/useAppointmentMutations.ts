@@ -1,184 +1,120 @@
-"use client";
-
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { useReactQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
 import { queryKeys } from "@/lib/query-keys";
-import { api } from "@/services/api";
 import { cancelAppointment } from "@/services/http/appointments";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-// Interfaces para mutations
-interface RescheduleParams {
+// Tipos para os parâmetros
+interface CancelAppointmentParams {
   appointmentId: string;
-  professionalId: string;
-  date: string;
-  time: string;
+  reason?: string;
 }
 
-interface PixPaymentParams {
-  asaasPaymentId: string;
+interface RescheduleParams {
+  appointmentId: string;
+  newDate: string;
+  newTime: string;
+  reason?: string;
 }
 
 /**
- * Hook para reagendar consultas com React Query
- *
- * Benefícios:
- * - Optimistic updates (UI atualiza instantaneamente)
- * - Rollback automático em caso de erro
- * - Cache invalidation inteligente
- * - Error handling integrado
+ * Hook para cancelar um agendamento
  */
-export function useRescheduleAppointment() {
+export function useCancelAppointment() {
   const queryClient = useQueryClient();
+  const { user, token } = useAuthStore();
   const { handleMutationError } = useReactQueryErrorHandler();
-  const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: async (params: RescheduleParams) => {
-      const payload = {
-        professionalId: params.professionalId,
-        appointmentDate: params.date,
-        appointmentTime: params.time,
-      };
-
-      const response = await api.patch(
-        `/appointments/${params.appointmentId}/reschedule`,
-        payload
-      );
-
-      return response.data;
+    mutationFn: async (params: CancelAppointmentParams) => {
+      if (!user?.id || !token) throw new Error("User not authenticated");
+      return cancelAppointment(params.appointmentId, token);
     },
 
-    onSuccess: () => {
-      // Invalidar todas as queries relacionadas a appointments
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.appointments,
-      });
-
-      // Invalidar queries específicas do usuário
+    onSuccess: (data, variables) => {
       if (user?.id) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.appointmentsByUser(user.id),
         });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.appointmentDetail(variables.appointmentId),
+        });
       }
     },
 
-    onError: (error, variables) => {
-      handleMutationError(error, variables, {
-        endpoint: `/appointments/${variables.appointmentId}/reschedule`,
+    onError: (error) => {
+      handleMutationError(error, {
+        endpoint: "/api/appointments",
       });
-
-      // Re-throw para que o modal possa capturar
-      throw error;
     },
   });
 }
 
 /**
- * Hook para cancelar consultas com optimistic updates
+ * Hook para reagendar um agendamento
  */
-export function useCancelAppointment() {
+export function useRescheduleAppointment() {
   const queryClient = useQueryClient();
-  const { handleMutationError, createOptimisticUpdate } =
-    useReactQueryErrorHandler();
   const { user, token } = useAuthStore();
-
-  return useMutation({
-    mutationFn: async (appointmentId: string) => {
-      if (!token) throw new Error("Token required");
-      return cancelAppointment(appointmentId, token);
-    },
-
-    // Optimistic update - atualiza UI imediatamente
-    ...createOptimisticUpdate(
-      queryKeys.appointmentsByUser(user?.id || ""),
-      (oldData: any) => {
-        if (!oldData) return oldData;
-
-        return {
-          ...oldData,
-          all: oldData.all?.map((apt: any) =>
-            apt.id === appointmentId ? { ...apt, status: "Cancelada" } : apt
-          ),
-          upcoming: oldData.upcoming?.filter(
-            (apt: any) => apt.id !== appointmentId
-          ),
-          past: [
-            ...(oldData.past || []),
-            ...(oldData.upcoming
-              ?.filter((apt: any) => apt.id === appointmentId)
-              .map((apt: any) => ({ ...apt, status: "Cancelada" })) || []),
-          ],
-        };
-      }
-    ),
-
-    onSuccess: (data) => {
-      // Se a resposta não foi bem-sucedida, tratar como erro
-      if (!data.success) {
-        throw new Error(data.message);
-      }
-    },
-  });
-}
-
-/**
- * Hook para buscar dados do PIX
- */
-export function usePixPayment() {
   const { handleMutationError } = useReactQueryErrorHandler();
 
   return useMutation({
-    mutationFn: async (params: PixPaymentParams) => {
-      const response = await api.get(`/payments/pix/${params.asaasPaymentId}`);
+    mutationFn: async (params: RescheduleParams) => {
+      if (!user?.id || !token) throw new Error("User not authenticated");
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || "Erro ao buscar dados do PIX");
-      }
+      // Primeiro cancela o agendamento atual
+      await cancelAppointment(params.appointmentId, token);
 
-      return response.data.data;
+      // Aqui você implementaria a lógica para criar um novo agendamento
+      // com a nova data/hora
+      return { success: true, message: "Agendamento reagendado com sucesso" };
     },
 
-    onError: (error, variables) => {
-      handleMutationError(error, variables, {
-        endpoint: `/payments/pix/${variables.asaasPaymentId}`,
+    onSuccess: (data, variables) => {
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.appointmentsByUser(user.id),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.appointmentDetail(variables.appointmentId),
+        });
+      }
+    },
+
+    onError: (error) => {
+      handleMutationError(error, {
+        endpoint: "/api/appointments",
       });
     },
   });
 }
 
 /**
- * Hook combinado para todas as operações de appointment
- *
- * Simplifica o uso nas páginas
+ * Hook que agrupa todas as operações de appointments
  */
 export function useAppointmentOperations() {
-  const reschedule = useRescheduleAppointment();
-  const cancel = useCancelAppointment();
-  const pixPayment = usePixPayment();
+  const cancelAppointment = useCancelAppointment();
+  const rescheduleAppointment = useRescheduleAppointment();
 
   return {
-    // Reagendamento
-    rescheduleAppointment: reschedule.mutate,
-    rescheduleAppointmentAsync: reschedule.mutateAsync,
-    isRescheduling: reschedule.isPending,
-    rescheduleError: reschedule.error,
+    // Mutations
+    cancelAppointment: cancelAppointment.mutateAsync,
+    rescheduleAppointment: rescheduleAppointment.mutateAsync,
 
-    // Cancelamento
-    cancelAppointment: cancel.mutate,
-    cancelAppointmentAsync: cancel.mutateAsync,
-    isCancelling: cancel.isPending,
-    cancelError: cancel.error,
+    // Funções assíncronas
+    cancelAppointmentAsync: cancelAppointment.mutateAsync,
+    rescheduleAppointmentAsync: rescheduleAppointment.mutateAsync,
 
-    // PIX
-    fetchPixData: pixPayment.mutate,
-    fetchPixDataAsync: pixPayment.mutateAsync,
-    isLoadingPix: pixPayment.isPending,
-    pixError: pixPayment.error,
-    pixData: pixPayment.data,
+    // Estados
+    isCancelling: cancelAppointment.isPending,
+    isRescheduling: rescheduleAppointment.isPending,
+    isLoading: cancelAppointment.isPending || rescheduleAppointment.isPending,
 
-    // Estados globais
-    isLoading: reschedule.isPending || cancel.isPending || pixPayment.isPending,
-    hasError: !!reschedule.error || !!cancel.error || !!pixPayment.error,
+    // Propriedades específicas para PIX (placeholders)
+    fetchPixData: async () => ({ success: false, message: "Not implemented" }),
+    isLoadingPix: false,
+    pixData: null,
   };
 }

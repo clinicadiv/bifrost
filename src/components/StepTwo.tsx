@@ -121,7 +121,11 @@ export const StepTwo = ({
                 {new Intl.NumberFormat("pt-BR", {
                   style: "currency",
                   currency: "BRL",
-                }).format(selectedService.pricing.yourPrice)}
+                }).format(
+                  (selectedService.pricing as any).finalPrice ??
+                    (selectedService.pricing as any).yourPrice ??
+                    0
+                )}
               </div>
               <div
                 className={`text-sm ${

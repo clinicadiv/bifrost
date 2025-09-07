@@ -87,11 +87,33 @@ interface StepSixProps {
     name: string;
     pricing: {
       originalPrice: number;
-      yourPrice: number;
-      savings: number;
+      finalPrice: number;
+      hasDiscount: boolean;
+      planInfo: {
+        planName: string;
+        copayAmount: number;
+        remainingSessions: number;
+      };
     };
   } | null;
 }
+
+// Helper function to get service price with fallback
+const getServicePrice = (service: StepSixProps["selectedService"]): number => {
+  if (!service) return 0;
+  const pricing = service.pricing as {
+    originalPrice: number;
+    finalPrice?: number;
+    yourPrice?: number;
+    hasDiscount?: boolean;
+    planInfo?: {
+      planName: string;
+      copayAmount: number;
+      remainingSessions: number;
+    };
+  };
+  return pricing.finalPrice ?? pricing.yourPrice ?? 0;
+};
 
 export const StepSix = ({
   onDataChange,
@@ -134,11 +156,11 @@ export const StepSix = ({
   useEffect(() => {
     if (
       selectedService &&
-      selectedService.pricing.yourPrice > 0 &&
+      getServicePrice(selectedService) > 0 &&
       selectedMethod === "CREDIT_CARD"
     ) {
       setIsLoadingInstallments(true);
-      getInstallments(selectedService.pricing.yourPrice)
+      getInstallments(getServicePrice(selectedService))
         .then((response) => {
           if (response.success) {
             setInstallmentOptions(response.data.installmentOptions);
@@ -929,7 +951,7 @@ export const StepSix = ({
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
-                      }).format(selectedService.pricing.yourPrice)}
+                      }).format(getServicePrice(selectedService))}
                     </span>
                   </div>
 
@@ -976,7 +998,7 @@ export const StepSix = ({
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
-                      }).format(selectedService.pricing.yourPrice)}
+                      }).format(getServicePrice(selectedService))}
                     </span>
                   </div>
 
@@ -989,11 +1011,11 @@ export const StepSix = ({
                       if (
                         highestInstallmentOption &&
                         highestInstallmentOption.totalAmount >
-                          selectedService.pricing.yourPrice
+                          selectedService.pricing.finalPrice
                       ) {
                         const savings =
                           highestInstallmentOption.totalAmount -
-                          selectedService.pricing.yourPrice;
+                          selectedService.pricing.finalPrice;
                         return (
                           <div
                             className={`${
@@ -1498,7 +1520,7 @@ export const StepSix = ({
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
-                      }).format(selectedService.pricing.yourPrice)}
+                      }).format(getServicePrice(selectedService))}
                     </span>
                   </div>
 
@@ -1553,8 +1575,8 @@ export const StepSix = ({
                         selectedInstallments > 1
                           ? installmentOptions.find(
                               (opt) => opt.installments === selectedInstallments
-                            )?.totalAmount || selectedService.pricing.yourPrice
-                          : selectedService.pricing.yourPrice
+                            )?.totalAmount || getServicePrice(selectedService)
+                          : getServicePrice(selectedService)
                       )}
                     </span>
                   </div>

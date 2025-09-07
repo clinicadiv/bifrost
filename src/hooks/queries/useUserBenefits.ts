@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
+// import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler"; // Removido temporariamente
 import { queryKeys } from "@/lib/query-keys";
 import { getUserBenefits } from "@/services/http/user-subscriptions";
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
  */
 export function useUserBenefits(userId: string) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
+  // const { onError, retry } = useQueryErrorHandler(); // Temporariamente removido
 
   return useQuery({
     queryKey: queryKeys.userBenefits(userId),
@@ -29,8 +29,8 @@ export function useUserBenefits(userId: string) {
     staleTime: 15 * 60 * 1000, // 15 minutos
     gcTime: 60 * 60 * 1000, // 1 hora
 
-    onError,
-    retry,
+    // onError, // Temporariamente removido
+    // retry, // Temporariamente removido
 
     // Não refetch automaticamente (dados estáveis)
     refetchOnWindowFocus: false,
@@ -47,8 +47,11 @@ export function useHasBenefit(userId: string, benefitType: string) {
   return {
     ...benefits,
     hasBenefit:
-      benefits.data?.benefits?.some(
-        (benefit: any) => benefit.type === benefitType && benefit.active
+      (
+        benefits.data as { benefits?: { type: string; active: boolean }[] }
+      )?.benefits?.some(
+        (benefit: { type: string; active: boolean }) =>
+          benefit.type === benefitType && benefit.active
       ) || false,
   };
 }
@@ -62,6 +65,9 @@ export function useActiveBenefits(userId: string) {
   return {
     ...benefits,
     activeBenefits:
-      benefits.data?.benefits?.filter((benefit: any) => benefit.active) || [],
+      (
+        benefits.data as { benefits?: { type: string; active: boolean }[] }
+      )?.benefits?.filter((benefit: { active: boolean }) => benefit.active) ||
+      [],
   };
 }

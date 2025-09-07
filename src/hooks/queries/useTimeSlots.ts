@@ -1,138 +1,114 @@
-"use client";
-
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useQueryErrorHandler } from "@/hooks/useReactQueryErrorHandler";
-import { queryKeys } from "@/lib/query-keys";
-import { checkAvailability } from "@/services/http/time-slot/check-availability";
+import {
+  checkAvailability,
+  type CheckAvailabilityResponse,
+} from "@/services/http/time-slot/check-availability";
 import { useQuery } from "@tanstack/react-query";
 
-/**
- * Hook React Query para verificar disponibilidade de horários
- *
- * Benefícios:
- * - Cache automático de disponibilidade
- * - Revalidação inteligente
- * - Error handling integrado
- * - Loading states automáticos
- */
-export function useTimeSlotAvailability(params: {
-  professionalId?: string;
-  serviceId?: string;
+interface UseTimeSlotAvailabilityParams {
+  medicalId?: string;
   date?: string;
-}) {
+  timeSlot?: string;
+}
+
+/**
+ * Hook para verificar disponibilidade de horário específico
+ */
+export function useTimeSlotAvailability(params: UseTimeSlotAvailabilityParams) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
 
   return useQuery({
-    queryKey: queryKeys.timeSlotAvailability(params),
+    queryKey: [
+      "time-slots",
+      "availability",
+      {
+        medicalId: params.medicalId,
+        date: params.date,
+        timeSlot: params.timeSlot,
+      },
+    ],
 
-    queryFn: async () => {
+    queryFn: async (): Promise<CheckAvailabilityResponse> => {
       if (!token) throw new Error("Token required");
-      if (!params.professionalId || !params.serviceId || !params.date) {
-        throw new Error("Missing required parameters");
+      if (!params.medicalId || !params.date || !params.timeSlot) {
+        throw new Error(
+          "Missing required parameters: medicalId, date, timeSlot"
+        );
       }
 
       return checkAvailability({
-        professionalId: params.professionalId,
-        serviceId: params.serviceId,
+        medicalId: params.medicalId,
         date: params.date,
-        token,
+        timeSlot: params.timeSlot,
       });
     },
 
     enabled:
-      !!token && !!params.professionalId && !!params.serviceId && !!params.date,
+      !!token && !!params.medicalId && !!params.date && !!params.timeSlot,
 
-    // Cache curto para disponibilidade (dados mudam frequentemente)
-    staleTime: 2 * 60 * 1000, // 2 minutos
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    // Cache por 2 minutos (dados mudam frequentemente)
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
 
-    onError,
-    retry,
-
-    // Transformar dados para facilitar uso
-    select: (data) => {
-      if (!data.success) {
-        return {
-          availableSlots: [],
-          hasAvailableSlots: false,
-          totalSlots: 0,
-        };
-      }
-
-      const slots = data.data?.availableSlots || [];
-
-      return {
-        availableSlots: slots,
-        hasAvailableSlots: slots.length > 0,
-        totalSlots: slots.length,
-        // Organizar por período
-        morningSlots: slots.filter((slot) => {
-          const hour = parseInt(slot.time.split(":")[0]);
-          return hour < 12;
-        }),
-        afternoonSlots: slots.filter((slot) => {
-          const hour = parseInt(slot.time.split(":")[0]);
-          return hour >= 12 && hour < 18;
-        }),
-        eveningSlots: slots.filter((slot) => {
-          const hour = parseInt(slot.time.split(":")[0]);
-          return hour >= 18;
-        }),
-      };
-    },
-
-    // Refetch quando janela ganha foco (dados podem ter mudado)
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    select: (data: CheckAvailabilityResponse) => ({
+      available: data.available,
+      reason: data.reason,
+      isAvailable: data.available,
+      message: data.available
+        ? "Horário disponível"
+        : data.reason || "Horário não disponível",
+    }),
   });
 }
 
 /**
- * Hook para buscar horários disponíveis de múltiplos profissionais
+ * Hook simplificado para verificar múltiplos horários
+ * Nota: Esta é uma implementação básica. Para casos mais complexos,
+ * considere usar React Query em paralelo ou uma API específica.
  */
 export function useMultipleTimeSlotAvailability(
-  requests: Array<{
-    professionalId: string;
-    serviceId: string;
-    date: string;
-  }>
+  requests: Array<{ medicalId: string; date: string; timeSlot: string }>
 ) {
   const { token } = useAuthStore();
-  const { onError, retry } = useQueryErrorHandler();
 
   return useQuery({
-    queryKey: queryKeys.multipleTimeSlotAvailability(requests),
+    queryKey: ["time-slots", "multiple-availability", requests],
 
     queryFn: async () => {
       if (!token) throw new Error("Token required");
 
-      // Fazer múltiplas chamadas em paralelo
-      const promises = requests.map((request) =>
-        checkAvailability({
-          ...request,
-          token,
+      // Verificar cada horário sequencialmente
+      // Em uma implementação real, você poderia ter uma API que aceita múltiplas verificações
+      const results = await Promise.all(
+        requests.map(async (request) => {
+          try {
+            const result = await checkAvailability(request);
+            return {
+              ...request,
+              result,
+              available: result.available,
+              reason: result.reason,
+            };
+          } catch {
+            return {
+              ...request,
+              result: { available: false, reason: "Erro na verificação" },
+              available: false,
+              reason: "Erro na verificação",
+            };
+          }
         })
       );
 
-      const results = await Promise.all(promises);
-
-      return results.map((result, index) => ({
-        ...requests[index],
-        result,
-        availableSlots: result.success ? result.data?.availableSlots || [] : [],
-      }));
+      return results;
     },
 
     enabled:
       !!token &&
       requests.length > 0 &&
-      requests.every((req) => req.professionalId && req.serviceId && req.date),
+      requests.every((req) => req.medicalId && req.date && req.timeSlot),
 
-    staleTime: 2 * 60 * 1000, // 2 minutos
-    gcTime: 5 * 60 * 1000, // 5 minutos
-
-    onError,
-    retry,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 }

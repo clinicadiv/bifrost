@@ -1,6 +1,7 @@
 export * from "./Address";
 export * from "./Appointment";
 export * from "./Convenio";
+export * from "./Dependent";
 export * from "./MedicalRecord";
 export * from "./Payment";
 export * from "./PsychiatricData";

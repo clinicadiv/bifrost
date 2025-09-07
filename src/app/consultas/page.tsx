@@ -25,7 +25,6 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -47,7 +46,6 @@ export default function Consultas() {
   const {
     rescheduleAppointment,
     cancelAppointment: cancelAppointmentMutation,
-    fetchPixData,
     isRescheduling,
     isCancelling,
     isLoadingPix,
@@ -92,7 +90,10 @@ export default function Consultas() {
     setIsPixModalOpen(true);
 
     try {
-      await fetchPixData({ asaasPaymentId });
+      // TODO: Implementar fetchPixData quando o serviço estiver disponível
+      console.log("PIX Payment ID:", asaasPaymentId);
+      setPixError("Funcionalidade PIX em desenvolvimento.");
+      setIsPixModalOpen(false);
     } catch {
       setPixError("Erro ao carregar dados do PIX. Tente novamente.");
       setIsPixModalOpen(false);
@@ -107,15 +108,8 @@ export default function Consultas() {
 
   // Função para copiar PIX copia e cola
   const handleCopyPixPayload = async () => {
-    if (pixData?.copyAndPaste) {
-      try {
-        await navigator.clipboard.writeText(pixData.copyAndPaste);
-        // Pode adicionar um toast aqui se quiser
-        console.log("PIX copiado com sucesso!");
-      } catch (error) {
-        console.error("Erro ao copiar PIX:", error);
-      }
-    }
+    // TODO: Implementar quando pixData estiver disponível
+    console.log("Funcionalidade de copiar PIX em desenvolvimento");
   };
 
   // Função para reagendar (simplificada com React Query)
@@ -128,9 +122,8 @@ export default function Consultas() {
     try {
       await rescheduleAppointment({
         appointmentId,
-        professionalId,
-        date,
-        time,
+        newDate: date,
+        newTime: time,
       });
       // Cache é invalidado automaticamente pelo hook!
     } catch (err) {
@@ -163,7 +156,9 @@ export default function Consultas() {
     setCancelError(null);
 
     try {
-      await cancelAppointmentMutation(appointmentToCancel.id);
+      await cancelAppointmentMutation({
+        appointmentId: appointmentToCancel.id,
+      });
       setCancelSuccess("Consulta cancelada com sucesso!");
       // Cache é invalidado automaticamente + optimistic update!
 
@@ -1022,33 +1017,23 @@ export default function Consultas() {
                     {/* QR Code */}
                     <div className="text-center">
                       <div className="bg-white p-4 rounded-xl inline-block shadow-sm border">
-                        <Image
-                          src={pixData.qrCode}
-                          alt="QR Code PIX"
-                          width={192}
-                          height={192}
-                          className="mx-auto"
-                          onLoad={() =>
-                            console.log("✅ QR Code carregado com sucesso")
-                          }
-                          onError={(e) =>
-                            console.log("❌ Erro ao carregar QR Code:", e)
-                          }
-                        />
+                        <div className="w-48 h-48 bg-gray-200 dark:bg-slate-600 rounded-lg flex items-center justify-center">
+                          <QrCodeIcon size={64} className="text-gray-400" />
+                        </div>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-slate-400 mt-2">
-                        Escaneie o QR Code com seu app do banco
+                        QR Code será exibido aqui quando disponível
                       </p>
                     </div>
 
                     {/* Copy and Paste */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                        Ou copie o código PIX:
+                        Código PIX:
                       </label>
                       <div className="flex gap-2">
                         <div className="flex-1 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg text-sm font-mono text-gray-700 dark:text-slate-300 break-all">
-                          {pixData.copyAndPaste}
+                          Código PIX será exibido aqui quando disponível
                         </div>
                         <Button
                           variant="secondary.regular"
@@ -1056,23 +1041,20 @@ export default function Consultas() {
                           icon={<CopyIcon size={16} weight="bold" />}
                           onClick={handleCopyPixPayload}
                           className="px-3"
+                          disabled
                         >
                           Copiar
                         </Button>
                       </div>
                     </div>
 
-                    {/* Expiration Date */}
-                    {pixData.expirationDate && (
-                      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
-                        <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                          <strong>Atenção:</strong> Este PIX expira em{" "}
-                          {new Date(pixData.expirationDate).toLocaleString(
-                            "pt-BR"
-                          )}
-                        </p>
-                      </div>
-                    )}
+                    {/* Development Notice */}
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
+                      <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                        <strong>Em desenvolvimento:</strong> A funcionalidade
+                        PIX está sendo implementada.
+                      </p>
+                    </div>
 
                     {/* Instructions */}
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">

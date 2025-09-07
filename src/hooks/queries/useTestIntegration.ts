@@ -45,7 +45,18 @@ export function useTestIntegration() {
   const allDataLoaded = !!(
     appointments.appointments.length >= 0 && // Pode ser 0
     medicalRecords.medicalRecords.length >= 0 &&
-    notifications.data?.results &&
+    (
+      notifications.data as {
+        results?: Array<{
+          id: string;
+          title: string;
+          message: string;
+          read: boolean;
+          createdAt: string;
+        }>;
+        total?: number;
+      }
+    )?.results &&
     unreadCount.data &&
     benefits.data
   );
@@ -71,10 +82,34 @@ export function useTestIntegration() {
     },
 
     notifications: {
-      data: notifications.data?.results || [],
+      data:
+        (
+          notifications.data as {
+            results?: Array<{
+              id: string;
+              title: string;
+              message: string;
+              read: boolean;
+              createdAt: string;
+            }>;
+            total?: number;
+          }
+        )?.results || [],
       loading: notifications.isPending,
       error: notifications.error,
-      count: notifications.data?.total || 0,
+      count:
+        (
+          notifications.data as {
+            results?: Array<{
+              id: string;
+              title: string;
+              message: string;
+              read: boolean;
+              createdAt: string;
+            }>;
+            total?: number;
+          }
+        )?.total || 0,
     },
 
     unreadCount: {
@@ -100,8 +135,20 @@ export function useTestIntegration() {
       // Contadores
       totalAppointments: appointments.appointments.length,
       totalMedicalRecords: medicalRecords.medicalRecords.length,
-      totalNotifications: notifications.data?.total || 0,
-      unreadNotifications: unreadCount.data?.count || 0,
+      totalNotifications:
+        (
+          notifications.data as {
+            results?: Array<{
+              id: string;
+              title: string;
+              message: string;
+              read: boolean;
+              createdAt: string;
+            }>;
+            total?: number;
+          }
+        )?.total || 0,
+      unreadNotifications: (unreadCount.data as { count?: number })?.count || 0,
 
       // Status das queries
       queriesStatus: {
@@ -170,7 +217,14 @@ export function useDebugIntegration() {
       console.log("Benefits:", integration.benefits);
       console.groupEnd();
     }
-  }, [integration.summary.allDataLoaded]);
+  }, [
+    integration.summary.allDataLoaded,
+    integration.appointments,
+    integration.benefits,
+    integration.medicalRecords,
+    integration.notifications,
+    integration.summary,
+  ]);
 
   return integration;
 }

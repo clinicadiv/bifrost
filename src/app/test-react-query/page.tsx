@@ -4,10 +4,10 @@ import { Button } from "@/components";
 import { useAppointmentOperations } from "@/hooks/mutations/useAppointmentMutations";
 import { useTestIntegration } from "@/hooks/queries/useTestIntegration";
 import {
-  AlertCircle,
+  ArrowClockwise,
   CheckCircle,
   Clock,
-  RefreshCw,
+  Warning,
   XCircle,
 } from "@phosphor-icons/react";
 
@@ -33,7 +33,7 @@ export default function TestReactQuery() {
       case "success":
         return <CheckCircle size={16} className="text-green-500" />;
       default:
-        return <AlertCircle size={16} className="text-gray-500" />;
+        return <Warning size={16} className="text-gray-500" />;
     }
   };
 
@@ -98,7 +98,7 @@ export default function TestReactQuery() {
                 </p>
               </div>
               <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
-                <RefreshCw size={24} weight="bold" />
+                <ArrowClockwise size={24} weight="bold" />
               </div>
             </div>
           </div>
@@ -112,7 +112,7 @@ export default function TestReactQuery() {
                 </p>
               </div>
               <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
-                <RefreshCw size={24} weight="bold" />
+                <ArrowClockwise size={24} weight="bold" />
               </div>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function TestReactQuery() {
                 </p>
               </div>
               <div className="p-3 bg-orange-100 text-orange-600 rounded-lg">
-                <RefreshCw size={24} weight="bold" />
+                <ArrowClockwise size={24} weight="bold" />
               </div>
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function TestReactQuery() {
                   >
                     <div className="flex items-center gap-2 mb-2">
                       {isStale ? (
-                        <AlertCircle size={16} className="text-yellow-600" />
+                        <Warning size={16} className="text-yellow-600" />
                       ) : (
                         <CheckCircle size={16} className="text-green-600" />
                       )}
@@ -315,7 +315,7 @@ export default function TestReactQuery() {
             variant="secondary.regular"
             onClick={() => {
               if (typeof window !== "undefined") {
-                // @ts-ignore
+                // @ts-expect-error - Debug function may not exist
                 window.debugQueries?.();
               }
             }}
@@ -326,7 +326,7 @@ export default function TestReactQuery() {
             variant="secondary.regular"
             onClick={() => {
               if (typeof window !== "undefined") {
-                // @ts-ignore
+                // @ts-expect-error - Cache clear function may not exist
                 window.clearQueryCache?.();
               }
             }}

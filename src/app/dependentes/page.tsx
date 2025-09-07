@@ -1,41 +1,57 @@
 "use client";
 
 import { Button } from "@/components";
+import { DependentCard } from "@/components/DependentCard";
+import { DependentFormModal } from "@/components/DependentFormModal";
+import { DependentStatistics } from "@/components/DependentStatistics";
 import { PageErrorBoundary } from "@/components/ErrorBoundary";
+import { useDependentsOperations } from "@/hooks/queries/useDependents";
+import { Dependent } from "@/types";
 import {
-  Cake,
   CalendarPlus,
   CheckCircle,
-  Clock,
-  EnvelopeSimple,
-  IdentificationCard,
   Info,
   Lightbulb,
-  PaperPlaneTilt,
-  Pen,
-  Trash,
-  UserCheck,
-  UserCircle,
   UserPlus,
   Users,
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-
-// Mock data - seria substituído por dados reais da API
-const DEPENDENTES = [
-  {
-    id: 1,
-    nome: "Matheus Antunes Melo",
-    parentesco: "Outro",
-    dataNascimento: "17/03/1999",
-    idade: 26,
-    cpf: "111.337.129-32",
-    email: "matheusantmelo@gmail.com",
-    status: "Pendente",
-  },
-];
+import { useState } from "react";
 
 export default function Dependentes() {
+  const {
+    dependents,
+    activeDependents,
+    inactiveDependents,
+    totalCount,
+    isLoading,
+    error,
+    refetch,
+  } = useDependentsOperations();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDependent, setEditingDependent] = useState<
+    Dependent | undefined
+  >();
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+
+  const handleAddDependent = () => {
+    setEditingDependent(undefined);
+    setModalMode("create");
+    setIsModalOpen(true);
+  };
+
+  const handleEditDependent = (dependent: Dependent) => {
+    setEditingDependent(dependent);
+    setModalMode("edit");
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingDependent(undefined);
+  };
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -63,18 +79,6 @@ export default function Dependentes() {
     },
   };
 
-  const statsVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
-  };
-
   const cardVariants = {
     hidden: {
       opacity: 0,
@@ -91,6 +95,21 @@ export default function Dependentes() {
       },
     },
   };
+
+  if (error) {
+    return (
+      <PageErrorBoundary pageTitle="Dependentes">
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-slate-900 dark:to-slate-800 w-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 dark:text-red-400 mb-4">
+              Erro ao carregar dependentes
+            </p>
+            <Button onClick={refetch}>Tentar novamente</Button>
+          </div>
+        </div>
+      </PageErrorBoundary>
+    );
+  }
 
   return (
     <PageErrorBoundary pageTitle="Dependentes">
@@ -126,6 +145,7 @@ export default function Dependentes() {
                   variant="primary.regular"
                   icon={<UserPlus size={20} weight="bold" />}
                   className="py-3 px-6"
+                  onClick={handleAddDependent}
                 >
                   Adicionar Dependente
                 </Button>
@@ -136,160 +156,7 @@ export default function Dependentes() {
 
         <div className="p-6 w-full">
           {/* Quick Stats */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-          >
-            <motion.div
-              variants={statsVariants}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 },
-              }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                    Total de Dependentes
-                  </p>
-                  <motion.p
-                    className="text-3xl font-bold text-gray-900 dark:text-white"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.5, duration: 0.3 }}
-                  >
-                    {DEPENDENTES.length}
-                  </motion.p>
-                </div>
-                <motion.div
-                  className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                >
-                  <Users
-                    size={24}
-                    weight="bold"
-                    className="text-blue-600 dark:text-blue-400"
-                  />
-                </motion.div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              variants={statsVariants}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 },
-              }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                    Ativos
-                  </p>
-                  <motion.p
-                    className="text-3xl font-bold text-gray-900 dark:text-white"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.6, duration: 0.3 }}
-                  >
-                    {DEPENDENTES.filter((d) => d.status === "Ativo").length}
-                  </motion.p>
-                </div>
-                <motion.div
-                  className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  <UserCheck
-                    size={24}
-                    weight="bold"
-                    className="text-green-600 dark:text-green-400"
-                  />
-                </motion.div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              variants={statsVariants}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 },
-              }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                    Pendentes
-                  </p>
-                  <motion.p
-                    className="text-3xl font-bold text-gray-900 dark:text-white"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.7, duration: 0.3 }}
-                  >
-                    {DEPENDENTES.filter((d) => d.status === "Pendente").length}
-                  </motion.p>
-                </div>
-                <motion.div
-                  className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                >
-                  <Clock
-                    size={24}
-                    weight="bold"
-                    className="text-amber-600 dark:text-amber-400"
-                  />
-                </motion.div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              variants={statsVariants}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 },
-              }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                    Últimos 30 dias
-                  </p>
-                  <motion.p
-                    className="text-3xl font-bold text-gray-900 dark:text-white"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.8, duration: 0.3 }}
-                  >
-                    +1
-                  </motion.p>
-                </div>
-                <motion.div
-                  className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                >
-                  <UserPlus
-                    size={24}
-                    weight="bold"
-                    className="text-purple-600 dark:text-purple-400"
-                  />
-                </motion.div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <DependentStatistics />
 
           {/* Info Card */}
           <motion.div
@@ -405,188 +272,41 @@ export default function Dependentes() {
                 transition={{ delay: 1, duration: 0.3 }}
               >
                 <Users size={16} weight="bold" />
-                {DEPENDENTES.length} dependente
-                {DEPENDENTES.length !== 1 ? "s" : ""}
+                {totalCount} dependente{totalCount !== 1 ? "s" : ""}
               </motion.div>
             </div>
 
-            {DEPENDENTES.length > 0 ? (
+            {isLoading ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {DEPENDENTES.map((dependente, index) => (
-                  <motion.div
-                    key={dependente.id}
-                    variants={cardVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ delay: index * 0.1 }}
-                    whileHover={{
-                      scale: 1.02,
-                      y: -5,
-                      transition: { duration: 0.2 },
-                    }}
-                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 animate-pulse"
                   >
-                    {/* Header */}
-                    <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                      <div className="flex items-center gap-4">
-                        <motion.div
-                          className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg"
-                          whileHover={{ scale: 1.1 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <UserCircle
-                            size={32}
-                            weight="bold"
-                            className="text-white"
-                          />
-                        </motion.div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                            {dependente.nome}
-                          </h3>
-                          <motion.span
-                            className="inline-block px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 text-sm rounded-full"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.5, duration: 0.3 }}
-                          >
-                            {dependente.parentesco}
-                          </motion.span>
-                        </div>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-16 h-16 bg-gray-200 dark:bg-slate-700 rounded-2xl"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-5 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2"></div>
                       </div>
                     </div>
-
-                    {/* Details */}
-                    <div className="p-6 space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <Cake
-                              size={16}
-                              weight="bold"
-                              className="text-blue-600 dark:text-blue-400"
-                            />
-                          </div>
-                          <span className="text-gray-600 dark:text-slate-300 text-sm">
-                            {dependente.dataNascimento} ({dependente.idade}{" "}
-                            anos)
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                            <IdentificationCard
-                              size={16}
-                              weight="bold"
-                              className="text-purple-600 dark:text-purple-400"
-                            />
-                          </div>
-                          <span className="text-gray-600 dark:text-slate-300 text-sm">
-                            {dependente.cpf}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                            <EnvelopeSimple
-                              size={16}
-                              weight="bold"
-                              className="text-green-600 dark:text-green-400"
-                            />
-                          </div>
-                          <span className="text-gray-600 dark:text-slate-300 text-sm">
-                            {dependente.email}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Status */}
-                      <div className="pt-4 border-t border-gray-100 dark:border-slate-700">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            {dependente.status === "Pendente" ? (
-                              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                                <Clock
-                                  size={16}
-                                  weight="bold"
-                                  className="text-amber-600 dark:text-amber-400"
-                                />
-                              </div>
-                            ) : (
-                              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                <CheckCircle
-                                  size={16}
-                                  weight="bold"
-                                  className="text-green-600 dark:text-green-400"
-                                />
-                              </div>
-                            )}
-                            <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                              Status:
-                              <span
-                                className={`ml-1 ${
-                                  dependente.status === "Pendente"
-                                    ? "text-amber-600 dark:text-amber-400"
-                                    : "text-green-600 dark:text-green-400"
-                                }`}
-                              >
-                                {dependente.status}
-                              </span>
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="flex-1"
-                          >
-                            <Button
-                              variant="secondary.light"
-                              size="sm"
-                              icon={<Pen size={14} weight="bold" />}
-                              className="flex-1"
-                            >
-                              Editar
-                            </Button>
-                          </motion.div>
-
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <Button
-                              variant="gray.light"
-                              size="sm"
-                              icon={<Trash size={14} weight="bold" />}
-                            >
-                              Excluir
-                            </Button>
-                          </motion.div>
-
-                          {dependente.status === "Pendente" && (
-                            <motion.div
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <Button
-                                variant="primary.regular"
-                                size="sm"
-                                icon={
-                                  <PaperPlaneTilt size={14} weight="bold" />
-                                }
-                              >
-                                Reenviar
-                              </Button>
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded"></div>
                     </div>
-                  </motion.div>
+                  </div>
+                ))}
+              </div>
+            ) : totalCount > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {dependents.map((dependent, index) => (
+                  <DependentCard
+                    key={dependent.id}
+                    dependent={dependent}
+                    onEdit={handleEditDependent}
+                    index={index}
+                  />
                 ))}
               </div>
             ) : (
@@ -622,6 +342,7 @@ export default function Dependentes() {
                   <Button
                     variant="primary.regular"
                     icon={<UserPlus size={20} weight="bold" />}
+                    onClick={handleAddDependent}
                   >
                     Adicionar Primeiro Dependente
                   </Button>
@@ -655,7 +376,8 @@ export default function Dependentes() {
                   y: -5,
                   transition: { duration: 0.2 },
                 }}
-                className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl shadow-sm border border-blue-200 dark:border-blue-800 overflow-hidden"
+                className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl shadow-sm border border-blue-200 dark:border-blue-800 overflow-hidden cursor-pointer"
+                onClick={handleAddDependent}
               >
                 <div className="p-6">
                   <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm">
@@ -709,7 +431,7 @@ export default function Dependentes() {
                   y: -5,
                   transition: { duration: 0.2 },
                 }}
-                className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl shadow-sm border border-green-200 dark:border-green-800 overflow-hidden"
+                className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl shadow-sm border border-green-200 dark:border-green-800 overflow-hidden cursor-pointer"
               >
                 <div className="p-6">
                   <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm">
@@ -754,6 +476,14 @@ export default function Dependentes() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Modal */}
+      <DependentFormModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        dependent={editingDependent}
+        mode={modalMode}
+      />
     </PageErrorBoundary>
   );
 }
